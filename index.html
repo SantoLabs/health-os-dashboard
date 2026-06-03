@@ -1,0 +1,136 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>Health OS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0b1020;--card:#151b2e;--card2:#1b2236;--line:#262f47;--txt:#e8edf7;--mut:#8b96b0;--ind:#6366f1;--grn:#16a34a;--amb:#f59e0b;--red:#ef4444;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:linear-gradient(180deg,#0b1020,#0e1428);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh}
+  .wrap{max-width:520px;margin:0 auto;padding:18px}
+  .hidden{display:none!important}
+  .login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:360px;margin:0 auto;padding:24px}
+  .login h1{font-size:26px;margin:0 0 2px;text-align:center}
+  .login p.sub{color:var(--mut);text-align:center;margin:0 0 14px;font-size:14px}
+  input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:15px}
+  button{cursor:pointer;border:none;border-radius:12px;font-size:15px;font-weight:700;padding:13px 16px}
+  .btn-primary{background:var(--ind);color:#fff;width:100%}
+  .btn-google{background:#fff;color:#1f2430;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-ghost{background:transparent;color:var(--mut);font-weight:600}
+  .err{color:var(--red);font-size:13px;text-align:center;min-height:16px}
+  .divider{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:12px;margin:4px 0}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .topbar .who{font-size:13px;color:var(--mut)}
+  .hero{background:radial-gradient(120% 120% at 50% 0,rgba(99,102,241,.25),transparent),var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;text-align:center;margin-bottom:14px}
+  .ring{font-size:64px;font-weight:800;line-height:1;margin:6px 0}
+  .lbl{font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:1px}
+  .verdict{font-size:15px;margin-top:12px;background:var(--card2);border-radius:12px;padding:12px 14px;line-height:1.5}
+  .st{font-size:12px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin:18px 4px 8px}
+  .factor{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:11px 13px;margin:7px 0}
+  .emo{font-size:22px}
+  .mid{flex:1;min-width:0}
+  .fl{font-size:14px;font-weight:700}
+  .fn{font-size:12px;color:var(--mut);margin-top:1px}
+  .fv{text-align:right;font-weight:800;font-size:15px;white-space:nowrap}
+  .fd{font-size:11px;color:var(--mut);font-weight:600;text-align:right}
+  .pos{border-left-color:var(--grn)} .neu{border-left-color:var(--amb)} .neg{border-left-color:var(--red)}
+  .reco{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin:8px 0;font-size:14px;line-height:1.5}
+  .reco b{color:var(--ind)}
+  .checkin{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:16px;text-align:center}
+  .faces{display:flex;justify-content:space-between;gap:6px;margin-top:10px}
+  .face{flex:1;font-size:30px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 0;transition:transform .08s}
+  .face.sel{border-color:var(--ind);background:rgba(99,102,241,.18);transform:scale(1.06)}
+  .muted{color:var(--mut);font-size:12px}
+  .foot{text-align:center;color:var(--mut);font-size:11px;margin:22px 0 8px;line-height:1.5}
+  .spin{text-align:center;color:var(--mut);padding:40px}
+</style></head>
+<body>
+<div id="login" class="login hidden">
+  <h1>🏃 Health OS</h1>
+  <p class="sub">Your personal health intelligence</p>
+  <input id="email" type="email" placeholder="Email" autocomplete="username"/>
+  <input id="pw" type="password" placeholder="Password" autocomplete="current-password"/>
+  <button class="btn-primary" onclick="doLogin()">Sign in</button>
+  <div class="err" id="loginErr"></div>
+  <div class="divider">or</div>
+  <button class="btn-google" onclick="doGoogle()"><span>🔑</span> Continue with Google</button>
+  <button class="btn-ghost" onclick="alert('Ask Santosh for evaluation access \u2014 invite-only during preview.')">Need an account?</button>
+</div>
+<div id="app" class="wrap hidden">
+  <div class="topbar">
+    <div><strong>Today</strong> <span class="who" id="who"></span></div>
+    <button class="btn-ghost" onclick="doLogout()">Sign out</button>
+  </div>
+  <div id="todayBody"><div class="spin">Loading your day…</div></div>
+  <div class="foot">Grounded in your Garmin, Strava, Hevy, Withings, calendar &amp; labs.<br>Observations, not medical advice.</div>
+</div>
+<script>
+const SB_URL="https://ntzlmclojiehhrzkgnsp.supabase.co", SB_ANON="sb_publishable_UqCw3ZPWqBK4nz6ELeuuhw_Dd9kthYY", API="https://ntzlmclojiehhrzkgnsp.supabase.co/functions/v1/health-dashboard";
+const sb=window.supabase.createClient(SB_URL,SB_ANON);
+const $=(id)=>document.getElementById(id);
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){showApp(session);}else{$("login").classList.remove("hidden");}
+}
+function showApp(session){
+  $("login").classList.add("hidden");$("app").classList.remove("hidden");
+  const em=session.user.email||"";$("who").textContent=em?("· "+em):"";
+  loadToday(session.access_token);
+}
+async function doLogin(){
+  $("loginErr").textContent="";
+  const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("pw").value});
+  if(error){$("loginErr").textContent=error.message;return;}
+  showApp(data.session);
+}
+async function doGoogle(){
+  const {error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.href.split('?')[0]}});
+  if(error)$("loginErr").textContent=error.message;
+}
+async function doLogout(){await sb.auth.signOut();location.reload();}
+async function loadToday(token){
+  try{
+    const r=await fetch(API+"?api=today",{headers:{Authorization:"Bearer "+token,apikey:SB_ANON}});
+    if(r.status===401){await sb.auth.signOut();location.reload();return;}
+    const d=await r.json();renderToday(d,token);
+  }catch(e){$("todayBody").innerHTML='<div class="spin">Could not load data.</div>';}
+}
+function scoreColor(s){if(s==null)return"var(--mut)";if(s>=85)return"var(--grn)";if(s>=70)return"var(--amb)";if(s>=50)return"#f97316";return"var(--red)";}
+function impClass(i){return i==="positive"?"pos":i==="negative"?"neg":"neu";}
+function renderToday(d,token){
+  const sc=scoreColor(d.score);let h="";
+  h+='<div class="hero"><div class="lbl">Readiness</div>';
+  h+='<div class="ring" style="color:'+sc+'">'+(d.score==null?"–":d.score)+'</div>';
+  h+='<div class="lbl">'+(d.label||"")+'</div>';
+  if(d.verdict)h+='<div class="verdict">'+d.verdict+'</div>';
+  h+='</div>';
+  h+='<div class="st">Why — what’s moving your score</div>';
+  (d.factors||[]).forEach(function(f){
+    h+='<div class="factor '+impClass(f.impact)+'"><div class="emo">'+f.emoji+'</div>';
+    h+='<div class="mid"><div class="fl">'+f.label+'</div><div class="fn">'+(f.note||"")+'</div></div>';
+    h+='<div><div class="fv">'+f.value+'</div>'+(f.detail?'<div class="fd">'+f.detail+'</div>':'')+'</div></div>';
+  });
+  if(d.training){h+='<div class="st">Today’s plan</div>';
+    h+='<div class="reco"><b>Train:</b> '+d.training+'</div>';
+    if(d.nutrition)h+='<div class="reco"><b>Fuel:</b> '+d.nutrition+'</div>';}
+  const faces=[[1,"😫"],[2,"😕"],[3,"😐"],[4,"🙂"],[5,"😄"]];
+  const existing=d.checkin&&d.checkin.feeling_score;
+  h+='<div class="checkin"><div style="font-weight:700">How are you feeling today?</div>';
+  h+='<div class="muted">'+(existing?("You logged "+existing+"/5 — tap to change"):"One tap. Optional — helps tune your score.")+'</div>';
+  h+='<div class="faces">';
+  faces.forEach(function(f){h+='<button class="face'+(existing===f[0]?" sel":"")+'" data-v="'+f[0]+'" onclick="pickFeeling('+f[0]+')">'+f[1]+'</button>';});
+  h+='</div><div class="muted" id="ciMsg" style="margin-top:8px"></div></div>';
+  $("todayBody").innerHTML=h;window.__token=token;
+}
+async function pickFeeling(v){
+  document.querySelectorAll(".face").forEach(function(el){el.classList.toggle("sel",Number(el.dataset.v)===v);});
+  $("ciMsg").textContent="Saving…";
+  try{
+    const r=await fetch(API+"?api=checkin",{method:"POST",headers:{Authorization:"Bearer "+window.__token,apikey:SB_ANON,"Content-Type":"application/json"},body:JSON.stringify({feeling_score:v})});
+    const j=await r.json();$("ciMsg").textContent=j.success?"Logged ✓ — feeds your readiness signal.":"Could not save.";
+  }catch(e){$("ciMsg").textContent="Could not save.";}
+}
+boot();
+</script>
+</body></html>
