@@ -91,7 +91,7 @@ async function doGoogle(){
 async function doLogout(){await sb.auth.signOut();location.reload();}
 async function loadToday(token){
   try{
-    const r=await fetch(API+"?api=today",{headers:{Authorization:"Bearer "+token,apikey:SB_ANON}});
+    const r=await fetch(API+"?api=today&apikey="+SB_ANON,{headers:{Authorization:"Bearer "+token}});
     if(r.status===401){await sb.auth.signOut();location.reload();return;}
     const d=await r.json();renderToday(d,token);
   }catch(e){$("todayBody").innerHTML='<div class="spin">Could not load data.</div>';}
@@ -127,7 +127,7 @@ async function pickFeeling(v){
   document.querySelectorAll(".face").forEach(function(el){el.classList.toggle("sel",Number(el.dataset.v)===v);});
   $("ciMsg").textContent="Saving…";
   try{
-    const r=await fetch(API+"?api=checkin",{method:"POST",headers:{Authorization:"Bearer "+window.__token,apikey:SB_ANON,"Content-Type":"application/json"},body:JSON.stringify({feeling_score:v})});
+    const r=await fetch(API+"?api=checkin&apikey="+SB_ANON,{method:"POST",headers:{Authorization:"Bearer "+window.__token,"Content-Type":"application/json"},body:JSON.stringify({feeling_score:v})});
     const j=await r.json();$("ciMsg").textContent=j.success?"Logged ✓ — feeds your readiness signal.":"Could not save.";
   }catch(e){$("ciMsg").textContent="Could not save.";}
 }
