@@ -4,10 +4,10 @@
 <title>Health OS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{--bg:#0b1020;--card:#151b2e;--card2:#1b2236;--line:#262f47;--txt:#e8edf7;--mut:#8b96b0;--ind:#6366f1;--grn:#16a34a;--amb:#f59e0b;--red:#ef4444;}
+  :root{--bg:#0b1020;--card:#151b2e;--card2:#1b2236;--line:#262f47;--txt:#e8edf7;--mut:#8b96b0;--ind:#6366f1;--grn:#16a34a;--amb:#f59e0b;--red:#ef4444;--orange:#f97316;--cyan:#06b6d4;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{margin:0;background:linear-gradient(180deg,#0b1020,#0e1428);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh}
-  .wrap{max-width:520px;margin:0 auto;padding:18px}
+  .wrap{max-width:540px;margin:0 auto;padding:18px 18px 90px}
   .hidden{display:none!important}
   .login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:360px;margin:0 auto;padding:24px}
   .login h1{font-size:26px;margin:0 0 2px;text-align:center}
@@ -16,15 +16,17 @@
   button{cursor:pointer;border:none;border-radius:12px;font-size:15px;font-weight:700;padding:13px 16px}
   .btn-primary{background:var(--ind);color:#fff;width:100%}
   .btn-google{background:#fff;color:#1f2430;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
-  .btn-ghost{background:transparent;color:var(--mut);font-weight:600}
+  .btn-ghost{background:transparent;color:var(--mut);font-weight:600;padding:6px 8px}
   .err{color:var(--red);font-size:13px;text-align:center;min-height:16px}
   .divider{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:12px;margin:4px 0}
   .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .topbar .who{font-size:13px;color:var(--mut)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .topbar h2{font-size:22px;margin:0}
+  .who{font-size:12px;color:var(--mut)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:10px 0}
   .hero{background:radial-gradient(120% 120% at 50% 0,rgba(99,102,241,.25),transparent),var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;text-align:center;margin-bottom:14px}
   .ring{font-size:64px;font-weight:800;line-height:1;margin:6px 0}
-  .lbl{font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:1px}
+  .lbl{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:1px}
   .verdict{font-size:15px;margin-top:12px;background:var(--card2);border-radius:12px;padding:12px 14px;line-height:1.5}
   .st{font-size:12px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin:18px 4px 8px}
   .factor{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:11px 13px;margin:7px 0}
@@ -42,41 +44,88 @@
   .face{flex:1;font-size:30px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 0;transition:transform .08s}
   .face.sel{border-color:var(--ind);background:rgba(99,102,241,.18);transform:scale(1.06)}
   .muted{color:var(--mut);font-size:12px}
-  .foot{text-align:center;color:var(--mut);font-size:11px;margin:22px 0 8px;line-height:1.5}
-  .spin{text-align:center;color:var(--mut);padding:40px}
+  .spin{text-align:center;color:var(--mut);padding:50px}
+  .row{display:flex;gap:10px}
+  .col{flex:1}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;text-align:center}
+  .stat .v{font-size:24px;font-weight:800}
+  .stat .k{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+  .seg{display:flex;gap:6px;margin:4px 0 10px}
+  .seg button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--mut);font-size:13px;padding:8px}
+  .seg button.on{background:var(--ind);color:#fff;border-color:var(--ind)}
+  .chartcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:9px 0}
+  .chartcard .h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .chartcard .h .t{font-size:14px;font-weight:700}
+  .chartcard .h .s{font-size:12px;color:var(--mut)}
+  svg{display:block;width:100%;overflow:visible}
+  .bar{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .bar .bl{width:64px;font-size:12px;color:var(--mut)}
+  .bar .bt{flex:1;background:#0e1428;border-radius:6px;height:16px;overflow:hidden}
+  .bar .bf{height:16px;border-radius:6px}
+  .bar .bv{width:60px;text-align:right;font-size:12px;font-weight:700}
+  .mk{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:12px 14px;margin:8px 0}
+  .mk .top{display:flex;justify-content:space-between;align-items:baseline}
+  .mk .nm{font-size:14px;font-weight:700}
+  .mk .vl{font-size:18px;font-weight:800}
+  .mk .rg{font-size:11px;color:var(--mut);margin-top:2px}
+  .mk .wy{font-size:12px;color:var(--mut);margin-top:7px;line-height:1.45}
+  .tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:50px;text-transform:uppercase;letter-spacing:.4px}
+  .tag.hi{background:rgba(239,68,68,.15);color:#fca5a5} .tag.lo{background:rgba(245,158,11,.15);color:#fcd34d} .tag.ok{background:rgba(22,163,74,.15);color:#86efac}
+  .ms{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line);margin:7px 0}
+  .ms .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .ms .ml{flex:1;font-size:14px;font-weight:600}
+  .ms .mw{font-size:11px;color:var(--mut);white-space:nowrap}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:50px;background:var(--card2);color:var(--txt);white-space:nowrap}
+  .nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,18,33,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:7px 4px 9px;z-index:50}
+  .nav button{background:none;border:none;color:var(--mut);font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 8px;flex:1}
+  .nav button .ic{font-size:19px}
+  .nav button.on{color:var(--ind)}
+  .legend{font-size:10px;color:var(--mut);margin-top:5px}
+  .legend span{font-weight:800}
 </style></head>
 <body>
 <div id="login" class="login hidden">
-  <h1>🏃 Health OS</h1>
+  <h1>&#127939; Health OS</h1>
   <p class="sub">Your personal health intelligence</p>
   <input id="email" type="email" placeholder="Email" autocomplete="username"/>
   <input id="pw" type="password" placeholder="Password" autocomplete="current-password"/>
   <button class="btn-primary" onclick="doLogin()">Sign in</button>
   <div class="err" id="loginErr"></div>
   <div class="divider">or</div>
-  <button class="btn-google" onclick="doGoogle()"><span>🔑</span> Continue with Google</button>
+  <button class="btn-google" onclick="doGoogle()"><span>&#128273;</span> Continue with Google</button>
   <button class="btn-ghost" onclick="alert('Ask Santosh for evaluation access \u2014 invite-only during preview.')">Need an account?</button>
 </div>
+
 <div id="app" class="wrap hidden">
-  <div class="topbar">
-    <div><strong>Today</strong> <span class="who" id="who"></span></div>
-    <button class="btn-ghost" onclick="doLogout()">Sign out</button>
+  <div class="topbar"><h2 id="viewTitle">Today</h2>
+    <div style="text-align:right"><div class="who" id="who"></div><button class="btn-ghost" onclick="doLogout()">Sign out</button></div>
   </div>
-  <div id="todayBody"><div class="spin">Loading your day…</div></div>
-  <div class="foot">Grounded in your Garmin, Strava, Hevy, Withings, calendar &amp; labs.<br>Observations, not medical advice.</div>
+  <div id="body"><div class="spin">Loading\u2026</div></div>
 </div>
+
+<div id="nav" class="nav hidden">
+  <button data-v="today" class="on" onclick="go('today')"><span class="ic">&#9728;&#65039;</span>Today</button>
+  <button data-v="trends" onclick="go('trends')"><span class="ic">&#128200;</span>Trends</button>
+  <button data-v="training" onclick="go('training')"><span class="ic">&#127947;&#65039;</span>Train</button>
+  <button data-v="goals" onclick="go('goals')"><span class="ic">&#127937;</span>Goals</button>
+  <button data-v="medical" onclick="go('medical')"><span class="ic">&#129658;</span>Medical</button>
+</div>
+
 <script>
 const SB_URL="https://ntzlmclojiehhrzkgnsp.supabase.co", SB_ANON="sb_publishable_UqCw3ZPWqBK4nz6ELeuuhw_Dd9kthYY", API="https://ntzlmclojiehhrzkgnsp.supabase.co/functions/v1/health-dashboard";
 const sb=window.supabase.createClient(SB_URL,SB_ANON);
 const $=(id)=>document.getElementById(id);
+let TOKEN=null, cache={}, trendDays=30;
+
 async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   if(session){showApp(session);}else{$("login").classList.remove("hidden");}
 }
 function showApp(session){
-  $("login").classList.add("hidden");$("app").classList.remove("hidden");
-  const em=session.user.email||"";$("who").textContent=em?("· "+em):"";
-  loadToday(session.access_token);
+  $("login").classList.add("hidden");$("app").classList.remove("hidden");$("nav").classList.remove("hidden");
+  TOKEN=session.access_token;
+  const em=session.user.email||"";$("who").textContent=em;
+  go('today');
 }
 async function doLogin(){
   $("loginErr").textContent="";
@@ -89,48 +138,185 @@ async function doGoogle(){
   if(error)$("loginErr").textContent=error.message;
 }
 async function doLogout(){await sb.auth.signOut();location.reload();}
-async function loadToday(token){
-  try{
-    const r=await fetch(API+"?api=today&apikey="+SB_ANON,{headers:{Authorization:"Bearer "+token}});
-    if(r.status===401){await sb.auth.signOut();location.reload();return;}
-    const d=await r.json();renderToday(d,token);
-  }catch(e){$("todayBody").innerHTML='<div class="spin">Could not load data.</div>';}
+
+async function api(route){
+  const r=await fetch(API+"?api="+route+"&apikey="+SB_ANON,{headers:{Authorization:"Bearer "+TOKEN}});
+  if(r.status===401){await sb.auth.signOut();location.reload();return null;}
+  return await r.json();
 }
-function scoreColor(s){if(s==null)return"var(--mut)";if(s>=85)return"var(--grn)";if(s>=70)return"var(--amb)";if(s>=50)return"#f97316";return"var(--red)";}
+
+const TITLES={today:"Today",trends:"Trends",training:"Training & Diet",goals:"Goals & Body",medical:"Medical"};
+async function go(v){
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  $("viewTitle").textContent=TITLES[v];window.scrollTo(0,0);
+  $("body").innerHTML='<div class="spin">Loading\u2026</div>';
+  try{
+    if(v==='today')await renderTodayView();
+    else if(v==='trends')await renderTrends();
+    else if(v==='training')await renderTraining();
+    else if(v==='goals')await renderGoals();
+    else if(v==='medical')await renderMedical();
+  }catch(e){$("body").innerHTML='<div class="spin">Could not load. '+(e.message||'')+'</div>';}
+}
+
+function scoreColor(s){if(s==null)return"var(--mut)";if(s>=85)return"var(--grn)";if(s>=70)return"var(--amb)";if(s>=50)return"var(--orange)";return"var(--red)";}
 function impClass(i){return i==="positive"?"pos":i==="negative"?"neg":"neu";}
-function renderToday(d,token){
-  const sc=scoreColor(d.score);let h="";
+
+/* ---------- TODAY ---------- */
+async function renderTodayView(){
+  const d=await api('today');cache.today=d;
+  const sc=scoreColor(d.score);let h='';
   h+='<div class="hero"><div class="lbl">Readiness</div>';
-  h+='<div class="ring" style="color:'+sc+'">'+(d.score==null?"–":d.score)+'</div>';
+  h+='<div class="ring" style="color:'+sc+'">'+(d.score==null?"\u2013":d.score)+'</div>';
   h+='<div class="lbl">'+(d.label||"")+'</div>';
   if(d.verdict)h+='<div class="verdict">'+d.verdict+'</div>';
   h+='</div>';
-  h+='<div class="st">Why — what’s moving your score</div>';
-  (d.factors||[]).forEach(function(f){
+  h+='<div class="st">Why \u2014 what\u2019s moving your score</div>';
+  (d.factors||[]).forEach(f=>{
     h+='<div class="factor '+impClass(f.impact)+'"><div class="emo">'+f.emoji+'</div>';
     h+='<div class="mid"><div class="fl">'+f.label+'</div><div class="fn">'+(f.note||"")+'</div></div>';
     h+='<div><div class="fv">'+f.value+'</div>'+(f.detail?'<div class="fd">'+f.detail+'</div>':'')+'</div></div>';
   });
-  if(d.training){h+='<div class="st">Today’s plan</div>';
+  if(d.training){h+='<div class="st">Today\u2019s plan</div>';
     h+='<div class="reco"><b>Train:</b> '+d.training+'</div>';
     if(d.nutrition)h+='<div class="reco"><b>Fuel:</b> '+d.nutrition+'</div>';}
-  const faces=[[1,"😫"],[2,"😕"],[3,"😐"],[4,"🙂"],[5,"😄"]];
-  const existing=d.checkin&&d.checkin.feeling_score;
+  const faces=[[1,"\uD83D\uDE2B"],[2,"\uD83D\uDE15"],[3,"\uD83D\uDE10"],[4,"\uD83D\uDE42"],[5,"\uD83D\uDE04"]];
+  const ex=d.checkin&&d.checkin.feeling_score;
   h+='<div class="checkin"><div style="font-weight:700">How are you feeling today?</div>';
-  h+='<div class="muted">'+(existing?("You logged "+existing+"/5 — tap to change"):"One tap. Optional — helps tune your score.")+'</div>';
-  h+='<div class="faces">';
-  faces.forEach(function(f){h+='<button class="face'+(existing===f[0]?" sel":"")+'" data-v="'+f[0]+'" onclick="pickFeeling('+f[0]+')">'+f[1]+'</button>';});
+  h+='<div class="muted">'+(ex?("You logged "+ex+"/5 \u2014 tap to change"):"One tap. Optional \u2014 helps tune your score.")+'</div><div class="faces">';
+  faces.forEach(f=>{h+='<button class="face'+(ex===f[0]?" sel":"")+'" data-v="'+f[0]+'" onclick="pickFeeling('+f[0]+')">'+f[1]+'</button>';});
   h+='</div><div class="muted" id="ciMsg" style="margin-top:8px"></div></div>';
-  $("todayBody").innerHTML=h;window.__token=token;
+  $("body").innerHTML=h;
 }
 async function pickFeeling(v){
-  document.querySelectorAll(".face").forEach(function(el){el.classList.toggle("sel",Number(el.dataset.v)===v);});
-  $("ciMsg").textContent="Saving…";
-  try{
-    const r=await fetch(API+"?api=checkin&apikey="+SB_ANON,{method:"POST",headers:{Authorization:"Bearer "+window.__token,"Content-Type":"application/json"},body:JSON.stringify({feeling_score:v})});
-    const j=await r.json();$("ciMsg").textContent=j.success?"Logged ✓ — feeds your readiness signal.":"Could not save.";
-  }catch(e){$("ciMsg").textContent="Could not save.";}
+  document.querySelectorAll(".face").forEach(el=>el.classList.toggle("sel",Number(el.dataset.v)===v));
+  $("ciMsg").textContent="Saving\u2026";
+  try{const r=await fetch(API+"?api=checkin&apikey="+SB_ANON,{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"},body:JSON.stringify({feeling_score:v})});
+    const j=await r.json();$("ciMsg").textContent=j.success?"Logged \u2713 \u2014 feeds your readiness signal.":"Could not save.";}catch(e){$("ciMsg").textContent="Could not save.";}
 }
+
+/* ---------- SVG line chart ---------- */
+function lineChart(points,opts){
+  opts=opts||{};const W=480,H=opts.h||90,P=6;
+  const vals=points.map(p=>p.v).filter(v=>v!=null);
+  if(!vals.length)return '<div class="muted">No data</div>';
+  let mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+  if(opts.min!=null)mn=Math.min(mn,opts.min);if(opts.max!=null)mx=Math.max(mx,opts.max);
+  if(mn===mx){mn-=1;mx+=1;}
+  const n=points.length;
+  const x=i=>P+(n<=1?0:i/(n-1))*(W-2*P);
+  const y=v=>H-P-((v-mn)/(mx-mn))*(H-2*P);
+  let d='',last=null;
+  points.forEach((p,i)=>{if(p.v==null)return;const cmd=(last==null)?'M':'L';d+=cmd+x(i).toFixed(1)+' '+y(p.v).toFixed(1)+' ';last=i;});
+  const col=opts.color||'var(--ind)';
+  let band='';
+  if(opts.band){const y1=y(opts.band[1]),y0=y(opts.band[0]);band='<rect x="0" y="'+Math.min(y0,y1).toFixed(1)+'" width="'+W+'" height="'+Math.abs(y0-y1).toFixed(1)+'" fill="rgba(22,163,74,.10)"/>';}
+  const lastV=vals[vals.length-1];
+  const lp=(function(){for(let i=points.length-1;i>=0;i--)if(points[i].v!=null)return i;return 0;})();
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:'+H+'px">'+band+'<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/><circle cx="'+x(lp).toFixed(1)+'" cy="'+y(lastV).toFixed(1)+'" r="3.5" fill="'+col+'"/></svg>';
+}
+function stackedSleep(points){
+  const W=480,H=110,P=4,n=points.length;if(!n)return '<div class="muted">No data</div>';
+  const bw=Math.max(2,(W-2*P)/n-2);const max=540;
+  let s='';points.forEach((p,i)=>{const x=P+i*((W-2*P)/n);let yb=H-P;
+    [[p.deep,'#1e3a8a'],[p.rem,'#6366f1'],[p.light,'#a5b4fc']].forEach(seg=>{const v=seg[0]||0;const hh=(v/max)*(H-2*P);yb-=hh;s+='<rect x="'+x.toFixed(1)+'" y="'+yb.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+hh.toFixed(1)+'" fill="'+seg[1]+'"/>';});
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:'+H+'px">'+s+'</svg>';
+}
+function card(title,sub,inner,legend){return '<div class="chartcard"><div class="h"><div class="t">'+title+'</div><div class="s">'+(sub||'')+'</div></div>'+inner+(legend?'<div class="legend">'+legend+'</div>':'')+'</div>';}
+
+/* ---------- TRENDS ---------- */
+async function renderTrends(){
+  const d=await api('trends&days='+trendDays);cache.trends=d;
+  let h='<div class="seg">';[30,60,90].forEach(dd=>{h+='<button class="'+(trendDays===dd?'on':'')+'" onclick="setTrendDays('+dd+')">'+dd+'d</button>';});h+='</div>';
+  const s=d.summary||{};
+  h+='<div class="row"><div class="col stat"><div class="v" style="color:'+scoreColor(s.avg_readiness)+'">'+(s.avg_readiness??'\u2013')+'</div><div class="k">Avg readiness</div></div>';
+  h+='<div class="col stat"><div class="v">'+(s.avg_sleep_h??'\u2013')+'h</div><div class="k">Avg sleep</div></div>';
+  h+='<div class="col stat"><div class="v">'+(s.avg_hrv??'\u2013')+'</div><div class="k">Avg HRV</div></div></div>';
+  h+=card('Readiness',trendDays+' days',lineChart(d.readiness.map(r=>({v:r.v})),{color:'#f59e0b',min:0,max:100}));
+  h+=card('Sleep stages','hrs/night',stackedSleep(d.sleep),'<span style="color:#1e3a8a">\u25A0</span> Deep <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light');
+  h+=card('HRV','ms, last-night avg',lineChart(d.hrv.map(r=>({v:r.v})),{color:'#06b6d4'}));
+  h+=card('Training load (ACWR)','sweet spot 0.8\u20131.3',lineChart(d.acwr.map(r=>({v:r.v})),{color:'#a78bfa',band:[0.8,1.3],min:0.5,max:1.5}));
+  if(d.weight&&d.weight.length)h+=card('Weight','kg (Withings)',lineChart(d.weight.map(r=>({v:r.v})),{color:'#34d399'}));
+  $("body").innerHTML=h;
+}
+function setTrendDays(dd){trendDays=dd;go('trends');}
+
+/* ---------- TRAINING & DIET ---------- */
+async function renderTraining(){
+  const d=await api('training');cache.training=d;
+  const st=d.strength,ca=d.cardio;let h='';
+  h+='<div class="st">Strength \u2014 last 30 days</div>';
+  h+='<div class="row"><div class="col stat"><div class="v">'+st.sessions_30d+'</div><div class="k">Sessions</div></div>';
+  h+='<div class="col stat"><div class="v">'+Math.round(st.volume_30d/1000)+'t</div><div class="k">Volume kg</div></div>';
+  h+='<div class="col stat"><div class="v">'+st.sets_30d+'</div><div class="k">Sets</div></div></div>';
+  if(st.weekly_volume&&st.weekly_volume.length){
+    const mx=Math.max.apply(null,st.weekly_volume.map(w=>w.volume))||1;
+    let bars='';st.weekly_volume.forEach(w=>{const wk=w.week.slice(5);bars+='<div class="bar"><div class="bl">'+wk+'</div><div class="bt"><div class="bf" style="width:'+(w.volume/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+Math.round(w.volume/1000*10)/10+'t</div></div>';});
+    h+=card('Weekly volume','last 8 weeks',bars);
+  }
+  if(st.recent&&st.recent.length){h+='<div class="st">Recent workouts</div>';st.recent.slice(0,5).forEach(w=>{h+='<div class="factor neu" style="border-left-color:#6366f1"><div class="mid"><div class="fl">'+(w.title||'Workout')+'</div><div class="fn">'+w.date+'</div></div><div><div class="fv">'+Math.round(w.volume/1000*10)/10+'t</div><div class="fd">'+(w.sets||0)+' sets</div></div></div>';});}
+  h+='<div class="st">Cardio \u2014 last 30 days</div>';
+  h+='<div class="row"><div class="col stat"><div class="v">'+ca.sessions_30d+'</div><div class="k">Sessions</div></div>';
+  h+='<div class="col stat"><div class="v">'+ca.distance_30d_km+'</div><div class="k">km total</div></div></div>';
+  const sc=ca.sport_counts||{};const sct=Object.keys(sc);
+  if(sct.length){let bars='';const mx=Math.max.apply(null,Object.values(sc))||1;const colors={Run:'#f59e0b',Swim:'#06b6d4',Ride:'#34d399',Other:'#8b96b0'};
+    sct.forEach(k=>{bars+='<div class="bar"><div class="bl">'+k+'</div><div class="bt"><div class="bf" style="width:'+(sc[k]/mx*100)+'%;background:'+(colors[k]||'#8b96b0')+'"></div></div><div class="bv">'+sc[k]+'</div></div>';});
+    h+=card('By sport','sessions',bars);}
+  const t=d.nutrition_targets||{};const wd=t.workout_day||{},rd=t.rest_day||{};
+  const keys=['calories','protein','carbs','fats','fiber','water'];
+  if(Object.keys(wd).length){h+='<div class="st">Nutrition targets</div><div class="card">';
+    h+='<table style="width:100%;border-collapse:collapse;font-size:13px"><tr><td class="muted" style="padding:5px 0"></td><td class="muted" style="text-align:right">Workout day</td><td class="muted" style="text-align:right">Rest day</td></tr>';
+    keys.forEach(k=>{if(wd[k]||rd[k])h+='<tr><td style="padding:5px 0;text-transform:capitalize">'+k+'</td><td style="text-align:right;font-weight:600">'+(wd[k]||'\u2013')+'</td><td style="text-align:right;color:var(--mut)">'+(rd[k]||'\u2013')+'</td></tr>';});
+    h+='</table></div>';}
+  $("body").innerHTML=h;
+}
+
+/* ---------- GOALS & BODY ---------- */
+async function renderGoals(){
+  const d=await api('goals');cache.goals=d;
+  const bc=d.body_comp;let h='';
+  h+='<div class="st">Body composition</div>';
+  h+='<div class="hero" style="padding:18px"><div class="lbl">Body fat (DEXA)</div>';
+  h+='<div class="ring" style="font-size:48px;color:'+(bc.dexa_bf>22?'var(--amb)':'var(--grn)')+'">'+(bc.dexa_bf??'\u2013')+'%</div>';
+  h+='<div class="muted">as of '+(bc.dexa_as_of||'\u2013')+' \u00B7 goal '+bc.goal_bf+'% by '+bc.goal_by+'</div>';
+  if(bc.dexa_bf!=null){const gap=Math.round((bc.dexa_bf-bc.goal_bf)*10)/10;h+='<div class="verdict">'+(gap>0?(gap+' points to go. Anchor fat-loss to DEXA, not the scale.'):'At/under goal \u2014 hold it.')+'</div>';}
+  h+='</div>';
+  h+='<div class="row"><div class="col stat"><div class="v">'+(bc.latest_weight??'\u2013')+'</div><div class="k">Weight kg</div></div>';
+  h+='<div class="col stat"><div class="v" style="font-size:15px">'+(bc.weight_as_of||'\u2013')+'</div><div class="k">As of</div></div></div>';
+  if(bc.weight_history&&bc.weight_history.length>1)h+=card('Weight trend','kg',lineChart(bc.weight_history.map(w=>({v:w.kg})),{color:'#34d399'}));
+  if(bc.dexa_history&&bc.dexa_history.length>1)h+=card('Body-fat history (DEXA)','%',lineChart(bc.dexa_history.map(x=>({v:x.bf})),{color:'#f59e0b'}));
+  h+='<div class="st">Goals on the horizon</div>';
+  const colors=['#6366f1','#06b6d4','#34d399','#f59e0b','#f97316','#ef4444'];
+  (d.milestones||[]).forEach((m,i)=>{
+    if(m.days_away!=null&&m.days_away< -20)return;
+    const wk=m.days_away==null?'':(m.days_away<=0?'now':(m.days_away<60?m.days_away+'d':Math.round(m.days_away/30)+'mo'));
+    h+='<div class="ms"><div class="dot" style="background:'+colors[i%colors.length]+'"></div><div class="ml">'+m.label+'</div><div class="mw">'+m.when+'</div><div class="pill">'+wk+'</div></div>';
+  });
+  $("body").innerHTML=h;
+}
+
+/* ---------- MEDICAL ---------- */
+async function renderMedical(){
+  const d=await api('medical');cache.medical=d;let h='';
+  h+='<div class="card" style="background:var(--card2)"><div style="font-weight:700;margin-bottom:4px">Where to focus now</div>';
+  h+='<div class="muted">Based on your latest labs ('+(d.last_report||'\u2013')+'). Observations, not medical advice \u2014 discuss anything clinical with your doctor.</div>';
+  if(d.focus&&d.focus.length)h+='<div style="margin-top:8px">'+d.focus.map(f=>'<span class="tag hi" style="margin-right:6px">'+f+'</span>').join('')+'</div>';
+  h+='</div>';
+  (d.markers||[]).forEach(m=>{
+    const flagged=m.status&&/high|low/i.test(m.status);
+    const tag=/high/i.test(m.status||'')?'<span class="tag hi">High</span>':/low/i.test(m.status||'')?'<span class="tag lo">Low</span>':'<span class="tag ok">In range</span>';
+    const border=flagged?(/high/i.test(m.status)?'var(--red)':'var(--amb)'):'var(--grn)';
+    let arrow='';if(m.prev_value!=null){const good=(m.direction==='up'&&m.higher_is_better)||(m.direction==='down'&&!m.higher_is_better);const bad=(m.direction==='up'&&!m.higher_is_better)||(m.direction==='down'&&m.higher_is_better);const col=good?'#86efac':bad?'#fca5a5':'var(--mut)';const ar=m.direction==='up'?'\u25B2':m.direction==='down'?'\u25BC':'\u2013';arrow=' <span style="color:'+col+';font-size:12px">'+ar+' from '+m.prev_value+'</span>';}
+    h+='<div class="mk" style="border-left-color:'+border+'"><div class="top"><div><span class="nm">'+m.metric+'</span> '+tag+'</div><div class="vl">'+m.value+' <span class="muted" style="font-size:12px">'+(m.unit||'')+'</span></div></div>';
+    h+='<div class="rg">'+(m.ref_low!=null?'ref '+m.ref_low+'\u2013'+(m.ref_high||''):(m.ref_high!=null?'ref <'+m.ref_high:''))+arrow+'</div>';
+    if(m.history&&m.history.length>1)h+='<div style="margin-top:8px">'+lineChart(m.history.map(x=>({v:x.v})),{color:flagged?'#fca5a5':'#86efac',h:54})+'</div>';
+    if(m.why)h+='<div class="wy">'+m.why+'</div>';
+    h+='</div>';
+  });
+  $("body").innerHTML=h;
+}
+
 boot();
 </script>
 </body></html>
