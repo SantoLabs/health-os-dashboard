@@ -20,7 +20,7 @@
   .err{color:var(--red);font-size:13px;text-align:center;min-height:16px}
   .divider{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:12px;margin:4px 0}
   .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
   .topbar h2{font-size:22px;margin:0}
   .who{font-size:12px;color:var(--mut)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:10px 0}
@@ -58,11 +58,13 @@
   .chartcard .h .t{font-size:14px;font-weight:700}
   .chartcard .h .s{font-size:12px;color:var(--mut)}
   svg{display:block;width:100%;overflow:visible}
+  .interp{font-size:12.5px;color:var(--txt);background:var(--card2);border-radius:9px;padding:9px 11px;margin-top:9px;line-height:1.5}
+  .interp b{color:var(--ind)}
   .bar{display:flex;align-items:center;gap:10px;margin:6px 0}
   .bar .bl{width:64px;font-size:12px;color:var(--mut)}
   .bar .bt{flex:1;background:#0e1428;border-radius:6px;height:16px;overflow:hidden}
   .bar .bf{height:16px;border-radius:6px}
-  .bar .bv{width:60px;text-align:right;font-size:12px;font-weight:700}
+  .bar .bv{width:64px;text-align:right;font-size:12px;font-weight:700}
   .mk{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:12px 14px;margin:8px 0}
   .mk .top{display:flex;justify-content:space-between;align-items:baseline}
   .mk .nm{font-size:14px;font-weight:700}
@@ -71,6 +73,7 @@
   .mk .wy{font-size:12px;color:var(--mut);margin-top:7px;line-height:1.45}
   .tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:50px;text-transform:uppercase;letter-spacing:.4px}
   .tag.hi{background:rgba(239,68,68,.15);color:#fca5a5} .tag.lo{background:rgba(245,158,11,.15);color:#fcd34d} .tag.ok{background:rgba(22,163,74,.15);color:#86efac}
+  .axis{display:flex;justify-content:space-between;font-size:10px;color:var(--mut);margin-top:3px}
   .ms{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line);margin:7px 0}
   .ms .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
   .ms .ml{flex:1;font-size:14px;font-weight:600}
@@ -97,8 +100,8 @@
 </div>
 
 <div id="app" class="wrap hidden">
-  <div class="topbar"><h2 id="viewTitle">Today</h2>
-    <div style="text-align:right"><div class="who" id="who"></div><button class="btn-ghost" onclick="doLogout()">Sign out</button></div>
+  <div class="topbar"><div><h2 id="viewTitle">Today</h2><div class="who" id="lastSync"></div></div>
+    <div style="text-align:right"><div class="who" id="who"></div><div style="display:flex;gap:4px;justify-content:flex-end;margin-top:2px"><button class="btn-ghost" id="refreshBtn" onclick="refresh()">↻ Refresh</button><button class="btn-ghost" onclick="doLogout()">Sign out</button></div></div>
   </div>
   <div id="body"><div class="spin">Loading\u2026</div></div>
 </div>
@@ -145,6 +148,11 @@ async function api(route){
   return await r.json();
 }
 
+/* last-synced + refresh */
+function relTime(iso){if(!iso)return '';const s=(Date.now()-new Date(iso).getTime())/1000;if(s<90)return 'just now';const m=Math.round(s/60);if(m<60)return m+'m ago';const h=Math.round(m/60);if(h<24)return h+'h ago';return Math.round(h/24)+'d ago';}
+function setLastSync(d){if(d&&d.last_synced){$("lastSync").textContent='Synced '+relTime(d.last_synced)+(d.data_through?' \u00B7 data through '+d.data_through:'');}}
+async function refresh(){const b=$("refreshBtn");if(b){b.textContent='↻ …';}cache={};const cur=document.querySelector('.nav button.on');await go(cur?cur.dataset.v:'today');if(b){b.textContent='↻ Refresh';}}
+
 const TITLES={today:"Today",trends:"Trends",training:"Training & Diet",goals:"Goals & Body",medical:"Medical"};
 async function go(v){
   document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
@@ -164,7 +172,7 @@ function impClass(i){return i==="positive"?"pos":i==="negative"?"neg":"neu";}
 
 /* ---------- TODAY ---------- */
 async function renderTodayView(){
-  const d=await api('today');cache.today=d;
+  const d=await api('today');cache.today=d;setLastSync(d);
   const sc=scoreColor(d.score);let h='';
   h+='<div class="hero"><div class="lbl">Readiness</div>';
   h+='<div class="ring" style="color:'+sc+'">'+(d.score==null?"\u2013":d.score)+'</div>';
@@ -199,45 +207,51 @@ async function pickFeeling(v){
 function lineChart(points,opts){
   opts=opts||{};const W=480,H=opts.h||90,P=6;
   const vals=points.map(p=>p.v).filter(v=>v!=null);
-  if(!vals.length)return '<div class="muted">No data</div>';
+  if(!vals.length)return '<div class="muted">No data yet</div>';
   let mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
   if(opts.min!=null)mn=Math.min(mn,opts.min);if(opts.max!=null)mx=Math.max(mx,opts.max);
   if(mn===mx){mn-=1;mx+=1;}
   const n=points.length;
-  const x=i=>P+(n<=1?0:i/(n-1))*(W-2*P);
+  let xf;
+  if(opts.timeScale&&points.every(p=>p.date)){const ts=points.map(p=>+new Date(p.date));const t0=Math.min.apply(null,ts),t1=Math.max.apply(null,ts);xf=i=>P+((t1===t0)?0:(ts[i]-t0)/(t1-t0))*(W-2*P);}
+  else{xf=i=>P+(n<=1?0:i/(n-1))*(W-2*P);}
   const y=v=>H-P-((v-mn)/(mx-mn))*(H-2*P);
   let d='',last=null;
-  points.forEach((p,i)=>{if(p.v==null)return;const cmd=(last==null)?'M':'L';d+=cmd+x(i).toFixed(1)+' '+y(p.v).toFixed(1)+' ';last=i;});
+  points.forEach((p,i)=>{if(p.v==null)return;const cmd=(last==null)?'M':'L';d+=cmd+xf(i).toFixed(1)+' '+y(p.v).toFixed(1)+' ';last=i;});
   const col=opts.color||'var(--ind)';
   let band='';
   if(opts.band){const y1=y(opts.band[1]),y0=y(opts.band[0]);band='<rect x="0" y="'+Math.min(y0,y1).toFixed(1)+'" width="'+W+'" height="'+Math.abs(y0-y1).toFixed(1)+'" fill="rgba(22,163,74,.10)"/>';}
   const lastV=vals[vals.length-1];
   const lp=(function(){for(let i=points.length-1;i>=0;i--)if(points[i].v!=null)return i;return 0;})();
-  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:'+H+'px">'+band+'<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/><circle cx="'+x(lp).toFixed(1)+'" cy="'+y(lastV).toFixed(1)+'" r="3.5" fill="'+col+'"/></svg>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:'+H+'px">'+band+'<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/><circle cx="'+xf(lp).toFixed(1)+'" cy="'+y(lastV).toFixed(1)+'" r="3.5" fill="'+col+'"/></svg>';
 }
 function stackedSleep(points){
-  const W=480,H=110,P=4,n=points.length;if(!n)return '<div class="muted">No data</div>';
+  const W=480,H=110,P=4,n=points.length;if(!n)return '<div class="muted">No data yet</div>';
   const bw=Math.max(2,(W-2*P)/n-2);const max=540;
   let s='';points.forEach((p,i)=>{const x=P+i*((W-2*P)/n);let yb=H-P;
     [[p.deep,'#1e3a8a'],[p.rem,'#6366f1'],[p.light,'#a5b4fc']].forEach(seg=>{const v=seg[0]||0;const hh=(v/max)*(H-2*P);yb-=hh;s+='<rect x="'+x.toFixed(1)+'" y="'+yb.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+hh.toFixed(1)+'" fill="'+seg[1]+'"/>';});
   });
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:'+H+'px">'+s+'</svg>';
 }
-function card(title,sub,inner,legend){return '<div class="chartcard"><div class="h"><div class="t">'+title+'</div><div class="s">'+(sub||'')+'</div></div>'+inner+(legend?'<div class="legend">'+legend+'</div>':'')+'</div>';}
+/* date axis labels (start / mid / end) */
+function fmtMD(s){const d=new Date(s);return (d.getUTCMonth()+1)+'/'+d.getUTCDate();}
+function dateAxis(arr){const ds=(arr||[]).filter(p=>p&&p.date).map(p=>p.date);if(ds.length<2)return '';const a=fmtMD(ds[0]),m=fmtMD(ds[Math.floor(ds.length/2)]),b=fmtMD(ds[ds.length-1]);return '<div class="axis"><span>'+a+'</span><span>'+m+'</span><span>'+b+'</span></div>';}
+function interp(txt){return txt?'<div class="interp">'+txt+'</div>':'';}
+function card(title,sub,inner,legend,extra){return '<div class="chartcard"><div class="h"><div class="t">'+title+'</div><div class="s">'+(sub||'')+'</div></div>'+inner+(legend?'<div class="legend">'+legend+'</div>':'')+(extra||'')+'</div>';}
 
 /* ---------- TRENDS ---------- */
 async function renderTrends(){
-  const d=await api('trends&days='+trendDays);cache.trends=d;
+  const d=await api('trends&days='+trendDays);cache.trends=d;const ip=d.interpretation||{};
   let h='<div class="seg">';[30,60,90].forEach(dd=>{h+='<button class="'+(trendDays===dd?'on':'')+'" onclick="setTrendDays('+dd+')">'+dd+'d</button>';});h+='</div>';
   const s=d.summary||{};
   h+='<div class="row"><div class="col stat"><div class="v" style="color:'+scoreColor(s.avg_readiness)+'">'+(s.avg_readiness??'\u2013')+'</div><div class="k">Avg readiness</div></div>';
   h+='<div class="col stat"><div class="v">'+(s.avg_sleep_h??'\u2013')+'h</div><div class="k">Avg sleep</div></div>';
   h+='<div class="col stat"><div class="v">'+(s.avg_hrv??'\u2013')+'</div><div class="k">Avg HRV</div></div></div>';
-  h+=card('Readiness',trendDays+' days',lineChart(d.readiness.map(r=>({v:r.v})),{color:'#f59e0b',min:0,max:100}));
-  h+=card('Sleep stages','hrs/night',stackedSleep(d.sleep),'<span style="color:#1e3a8a">\u25A0</span> Deep <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light');
-  h+=card('HRV','ms, last-night avg',lineChart(d.hrv.map(r=>({v:r.v})),{color:'#06b6d4'}));
-  h+=card('Training load (ACWR)','sweet spot 0.8\u20131.3',lineChart(d.acwr.map(r=>({v:r.v})),{color:'#a78bfa',band:[0.8,1.3],min:0.5,max:1.5}));
-  if(d.weight&&d.weight.length)h+=card('Weight','kg (Withings)',lineChart(d.weight.map(r=>({v:r.v})),{color:'#34d399'}));
+  h+=card('Readiness',trendDays+' days',lineChart(d.readiness.map(r=>({v:r.v,date:r.date})),{color:'#f59e0b',min:0,max:100})+dateAxis(d.readiness),null,interp(ip.readiness)+interp(ip.link));
+  h+=card('Sleep stages','hrs/night',stackedSleep(d.sleep)+dateAxis(d.sleep),'<span style="color:#1e3a8a">\u25A0</span> Deep <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light',interp(ip.sleep));
+  h+=card('HRV','ms, last-night avg',lineChart(d.hrv.map(r=>({v:r.v,date:r.date})),{color:'#06b6d4'})+dateAxis(d.hrv),null,interp(ip.hrv));
+  h+=card('Training load (ACWR)','sweet spot 0.8\u20131.3',lineChart(d.acwr.map(r=>({v:r.v,date:r.date})),{color:'#a78bfa',band:[0.8,1.3],min:0.5,max:1.5})+dateAxis(d.acwr),null,interp(ip.acwr));
+  if(d.weight&&d.weight.length)h+=card('Weight','kg (Withings)',lineChart(d.weight.map(r=>({v:r.v,date:r.date})),{color:'#34d399'})+dateAxis(d.weight),null,interp(ip.weight));
   $("body").innerHTML=h;
 }
 function setTrendDays(dd){trendDays=dd;go('trends');}
@@ -246,16 +260,18 @@ function setTrendDays(dd){trendDays=dd;go('trends');}
 async function renderTraining(){
   const d=await api('training');cache.training=d;
   const st=d.strength,ca=d.cardio;let h='';
+  if(d.insights&&d.insights.length){h+='<div class="st">What it means</div><div class="card">';
+    d.insights.forEach(x=>{h+='<div style="font-size:13px;line-height:1.55;margin:5px 0;padding-left:15px;text-indent:-11px">• '+x+'</div>';});h+='</div>';}
   h+='<div class="st">Strength \u2014 last 30 days</div>';
-  h+='<div class="row"><div class="col stat"><div class="v">'+st.sessions_30d+'</div><div class="k">Sessions</div></div>';
-  h+='<div class="col stat"><div class="v">'+Math.round(st.volume_30d/1000)+'t</div><div class="k">Volume kg</div></div>';
-  h+='<div class="col stat"><div class="v">'+st.sets_30d+'</div><div class="k">Sets</div></div></div>';
+  h+='<div class="row"><div class="col stat"><div class="v">'+st.sessions_30d+'</div><div class="k">Sessions 30d</div></div>';
+  h+='<div class="col stat"><div class="v" style="color:'+(st.sessions_7d>=st.target_per_week?'var(--grn)':'var(--amb)')+'">'+st.sessions_7d+'/'+st.target_per_week+'</div><div class="k">This week</div></div>';
+  h+='<div class="col stat"><div class="v">'+st.sets_30d+'</div><div class="k">Sets 30d</div></div></div>';
   if(st.weekly_volume&&st.weekly_volume.length){
     const mx=Math.max.apply(null,st.weekly_volume.map(w=>w.volume))||1;
-    let bars='';st.weekly_volume.forEach(w=>{const wk=w.week.slice(5);bars+='<div class="bar"><div class="bl">'+wk+'</div><div class="bt"><div class="bf" style="width:'+(w.volume/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+Math.round(w.volume/1000*10)/10+'t</div></div>';});
-    h+=card('Weekly volume','last 8 weeks',bars);
+    let bars='';st.weekly_volume.forEach(w=>{const wk=w.week.slice(5);bars+='<div class="bar"><div class="bl">'+wk+'</div><div class="bt"><div class="bf" style="width:'+(w.volume/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+(w.volume>=1000?(Math.round(w.volume/100)/10)+'k':w.volume)+'</div></div>';});
+    h+=card('Weekly volume trend','relative, last 8 weeks (kg)',bars);
   }
-  if(st.recent&&st.recent.length){h+='<div class="st">Recent workouts</div>';st.recent.slice(0,5).forEach(w=>{h+='<div class="factor neu" style="border-left-color:#6366f1"><div class="mid"><div class="fl">'+(w.title||'Workout')+'</div><div class="fn">'+w.date+'</div></div><div><div class="fv">'+Math.round(w.volume/1000*10)/10+'t</div><div class="fd">'+(w.sets||0)+' sets</div></div></div>';});}
+  if(st.recent&&st.recent.length){h+='<div class="st">Recent workouts</div>';st.recent.slice(0,5).forEach(w=>{h+='<div class="factor neu" style="border-left-color:#6366f1"><div class="mid"><div class="fl">'+(w.title||'Workout')+'</div><div class="fn">'+w.date+'</div></div><div><div class="fv">'+(w.sets||0)+' sets</div></div></div>';});}
   h+='<div class="st">Cardio \u2014 last 30 days</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+ca.sessions_30d+'</div><div class="k">Sessions</div></div>';
   h+='<div class="col stat"><div class="v">'+ca.distance_30d_km+'</div><div class="k">km total</div></div></div>';
@@ -263,6 +279,7 @@ async function renderTraining(){
   if(sct.length){let bars='';const mx=Math.max.apply(null,Object.values(sc))||1;const colors={Run:'#f59e0b',Swim:'#06b6d4',Ride:'#34d399',Other:'#8b96b0'};
     sct.forEach(k=>{bars+='<div class="bar"><div class="bl">'+k+'</div><div class="bt"><div class="bf" style="width:'+(sc[k]/mx*100)+'%;background:'+(colors[k]||'#8b96b0')+'"></div></div><div class="bv">'+sc[k]+'</div></div>';});
     h+=card('By sport','sessions',bars);}
+  if(ca.recent&&ca.recent.length){h+='<div class="st">Recent activities</div>';ca.recent.slice(0,5).forEach(c=>{h+='<div class="factor neu" style="border-left-color:#06b6d4"><div class="mid"><div class="fl">'+c.sport+'</div><div class="fn">'+c.date+'</div></div><div><div class="fv">'+c.km+' km</div><div class="fd">'+c.mins+' min</div></div></div>';});}
   const t=d.nutrition_targets||{};const wd=t.workout_day||{},rd=t.rest_day||{};
   const keys=['calories','protein','carbs','fats','fiber','water'];
   if(Object.keys(wd).length){h+='<div class="st">Nutrition targets</div><div class="card">';
@@ -284,8 +301,8 @@ async function renderGoals(){
   h+='</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+(bc.latest_weight??'\u2013')+'</div><div class="k">Weight kg</div></div>';
   h+='<div class="col stat"><div class="v" style="font-size:15px">'+(bc.weight_as_of||'\u2013')+'</div><div class="k">As of</div></div></div>';
-  if(bc.weight_history&&bc.weight_history.length>1)h+=card('Weight trend','kg',lineChart(bc.weight_history.map(w=>({v:w.kg})),{color:'#34d399'}));
-  if(bc.dexa_history&&bc.dexa_history.length>1)h+=card('Body-fat history (DEXA)','%',lineChart(bc.dexa_history.map(x=>({v:x.bf})),{color:'#f59e0b'}));
+  if(bc.weight_history&&bc.weight_history.length>1)h+=card('Weight trend','kg',lineChart(bc.weight_history.map(w=>({v:w.kg,date:w.date})),{color:'#34d399'})+dateAxis(bc.weight_history.map(w=>({date:w.date}))));
+  if(bc.dexa_history&&bc.dexa_history.length>1)h+=card('Body-fat history (DEXA)','%',lineChart(bc.dexa_history.map(x=>({v:x.bf,date:x.date})),{color:'#f59e0b',timeScale:true})+dateAxis(bc.dexa_history));
   h+='<div class="st">Goals on the horizon</div>';
   const colors=['#6366f1','#06b6d4','#34d399','#f59e0b','#f97316','#ef4444'];
   (d.milestones||[]).forEach((m,i)=>{
@@ -303,16 +320,19 @@ async function renderMedical(){
   h+='<div class="muted">Based on your latest labs ('+(d.last_report||'\u2013')+'). Observations, not medical advice \u2014 discuss anything clinical with your doctor.</div>';
   if(d.focus&&d.focus.length)h+='<div style="margin-top:8px">'+d.focus.map(f=>'<span class="tag hi" style="margin-right:6px">'+f+'</span>').join('')+'</div>';
   h+='</div>';
-  (d.markers||[]).forEach(m=>{
-    const flagged=m.status&&/high|low/i.test(m.status);
-    const tag=/high/i.test(m.status||'')?'<span class="tag hi">High</span>':/low/i.test(m.status||'')?'<span class="tag lo">Low</span>':'<span class="tag ok">In range</span>';
-    const border=flagged?(/high/i.test(m.status)?'var(--red)':'var(--amb)'):'var(--grn)';
-    let arrow='';if(m.prev_value!=null){const good=(m.direction==='up'&&m.higher_is_better)||(m.direction==='down'&&!m.higher_is_better);const bad=(m.direction==='up'&&!m.higher_is_better)||(m.direction==='down'&&m.higher_is_better);const col=good?'#86efac':bad?'#fca5a5':'var(--mut)';const ar=m.direction==='up'?'\u25B2':m.direction==='down'?'\u25BC':'\u2013';arrow=' <span style="color:'+col+';font-size:12px">'+ar+' from '+m.prev_value+'</span>';}
-    h+='<div class="mk" style="border-left-color:'+border+'"><div class="top"><div><span class="nm">'+m.metric+'</span> '+tag+'</div><div class="vl">'+m.value+' <span class="muted" style="font-size:12px">'+(m.unit||'')+'</span></div></div>';
-    h+='<div class="rg">'+(m.ref_low!=null?'ref '+m.ref_low+'\u2013'+(m.ref_high||''):(m.ref_high!=null?'ref <'+m.ref_high:''))+arrow+'</div>';
-    if(m.history&&m.history.length>1)h+='<div style="margin-top:8px">'+lineChart(m.history.map(x=>({v:x.v})),{color:flagged?'#fca5a5':'#86efac',h:54})+'</div>';
-    if(m.why)h+='<div class="wy">'+m.why+'</div>';
-    h+='</div>';
+  (d.sections||[]).forEach(sec=>{
+    h+='<div class="st">'+sec.group+(sec.flagged?' \u00B7 <span style="color:#fca5a5">'+sec.flagged+' flagged</span>':'')+'</div>';
+    (sec.markers||[]).forEach(m=>{
+      const flagged=m.status&&/high|low/i.test(m.status);
+      const tag=/high/i.test(m.status||'')?'<span class="tag hi">High</span>':/low/i.test(m.status||'')?'<span class="tag lo">Low</span>':'<span class="tag ok">In range</span>';
+      const border=flagged?(/high/i.test(m.status)?'var(--red)':'var(--amb)'):'var(--grn)';
+      let arrow='';if(m.prev_value!=null){const good=(m.direction==='up'&&m.higher_is_better)||(m.direction==='down'&&!m.higher_is_better);const bad=(m.direction==='up'&&!m.higher_is_better)||(m.direction==='down'&&m.higher_is_better);const col=good?'#86efac':bad?'#fca5a5':'var(--mut)';const ar=m.direction==='up'?'\u25B2':m.direction==='down'?'\u25BC':'\u2013';arrow=' <span style="color:'+col+';font-size:12px">'+ar+' from '+m.prev_value+'</span>';}
+      h+='<div class="mk" style="border-left-color:'+border+'"><div class="top"><div><span class="nm">'+m.metric+'</span> '+tag+'</div><div class="vl">'+m.value+' <span class="muted" style="font-size:12px">'+(m.unit||'')+'</span></div></div>';
+      h+='<div class="rg">'+(m.ref_low!=null?'ref '+m.ref_low+'\u2013'+(m.ref_high||''):(m.ref_high!=null?'ref <'+m.ref_high:''))+arrow+'</div>';
+      if(m.history&&m.history.length>1)h+='<div style="margin-top:8px">'+lineChart(m.history.map(x=>({v:x.v,date:x.date})),{color:flagged?'#fca5a5':'#86efac',h:54,timeScale:true})+dateAxis(m.history)+'</div>';
+      if(m.why)h+='<div class="wy">'+m.why+'</div>';
+      h+='</div>';
+    });
   });
   $("body").innerHTML=h;
 }
