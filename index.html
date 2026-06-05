@@ -59,12 +59,11 @@
   .chartcard .h .s{font-size:12px;color:var(--mut)}
   svg{display:block;width:100%;overflow:visible}
   .interp{font-size:12.5px;color:var(--txt);background:var(--card2);border-radius:9px;padding:9px 11px;margin-top:9px;line-height:1.5}
-  .interp b{color:var(--ind)}
   .bar{display:flex;align-items:center;gap:10px;margin:6px 0}
   .bar .bl{width:64px;font-size:12px;color:var(--mut)}
   .bar .bt{flex:1;background:#0e1428;border-radius:6px;height:16px;overflow:hidden}
   .bar .bf{height:16px;border-radius:6px}
-  .bar .bv{width:64px;text-align:right;font-size:12px;font-weight:700}
+  .bar .bv{width:86px;text-align:right;font-size:12px;font-weight:700}
   .mk{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:12px 14px;margin:8px 0}
   .mk .top{display:flex;justify-content:space-between;align-items:baseline}
   .mk .nm{font-size:14px;font-weight:700}
@@ -74,11 +73,16 @@
   .tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:50px;text-transform:uppercase;letter-spacing:.4px}
   .tag.hi{background:rgba(239,68,68,.15);color:#fca5a5} .tag.lo{background:rgba(245,158,11,.15);color:#fcd34d} .tag.ok{background:rgba(22,163,74,.15);color:#86efac}
   .axis{display:flex;justify-content:space-between;font-size:10px;color:var(--mut);margin-top:3px}
+  .mtable{width:100%;border-collapse:collapse;font-size:13px}
+  .mtable td{padding:6px 0;border-bottom:1px solid var(--line)}
+  .mtable tr:last-child td{border-bottom:none}
   .ms{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line);margin:7px 0}
   .ms .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
   .ms .ml{flex:1;font-size:14px;font-weight:600}
   .ms .mw{font-size:11px;color:var(--mut);white-space:nowrap}
   .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:50px;background:var(--card2);color:var(--txt);white-space:nowrap}
+  .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ind);color:#fff;font-size:13px;font-weight:600;padding:10px 18px;border-radius:50px;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none}
+  .toast.show{opacity:.97}
   .nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,18,33,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:7px 4px 9px;z-index:50}
   .nav button{background:none;border:none;color:var(--mut);font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 8px;flex:1}
   .nav button .ic{font-size:19px}
@@ -105,6 +109,7 @@
   </div>
   <div id="body"><div class="spin">Loading\u2026</div></div>
 </div>
+<div id="toast" class="toast"></div>
 
 <div id="nav" class="nav hidden">
   <button data-v="today" class="on" onclick="go('today')"><span class="ic">&#9728;&#65039;</span>Today</button>
@@ -118,7 +123,9 @@
 const SB_URL="https://ntzlmclojiehhrzkgnsp.supabase.co", SB_ANON="sb_publishable_UqCw3ZPWqBK4nz6ELeuuhw_Dd9kthYY", API="https://ntzlmclojiehhrzkgnsp.supabase.co/functions/v1/health-dashboard";
 const sb=window.supabase.createClient(SB_URL,SB_ANON);
 const $=(id)=>document.getElementById(id);
-let TOKEN=null, cache={}, trendDays=30;
+let TOKEN=null, cache={}, trendDays=30, toastT=null;
+
+function showToast(msg){const t=$("toast");t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900);}
 
 async function boot(){
   const {data:{session}}=await sb.auth.getSession();
@@ -148,10 +155,9 @@ async function api(route){
   return await r.json();
 }
 
-/* last-synced + refresh */
 function relTime(iso){if(!iso)return '';const s=(Date.now()-new Date(iso).getTime())/1000;if(s<90)return 'just now';const m=Math.round(s/60);if(m<60)return m+'m ago';const h=Math.round(m/60);if(h<24)return h+'h ago';return Math.round(h/24)+'d ago';}
 function setLastSync(d){if(d&&d.last_synced){$("lastSync").textContent='Synced '+relTime(d.last_synced)+(d.data_through?' \u00B7 data through '+d.data_through:'');}}
-async function refresh(){const b=$("refreshBtn");if(b){b.textContent='↻ …';}cache={};const cur=document.querySelector('.nav button.on');await go(cur?cur.dataset.v:'today');if(b){b.textContent='↻ Refresh';}}
+async function refresh(){const b=$("refreshBtn");if(b)b.textContent='↻ …';cache={};const cur=document.querySelector('.nav button.on');await go(cur?cur.dataset.v:'today');if(b)b.textContent='↻ Refresh';showToast('Updated ✓');}
 
 const TITLES={today:"Today",trends:"Trends",training:"Training & Diet",goals:"Goals & Body",medical:"Medical"};
 async function go(v){
@@ -233,9 +239,9 @@ function stackedSleep(points){
   });
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:'+H+'px">'+s+'</svg>';
 }
-/* date axis labels (start / mid / end) */
 function fmtMD(s){const d=new Date(s);return (d.getUTCMonth()+1)+'/'+d.getUTCDate();}
-function dateAxis(arr){const ds=(arr||[]).filter(p=>p&&p.date).map(p=>p.date);if(ds.length<2)return '';const a=fmtMD(ds[0]),m=fmtMD(ds[Math.floor(ds.length/2)]),b=fmtMD(ds[ds.length-1]);return '<div class="axis"><span>'+a+'</span><span>'+m+'</span><span>'+b+'</span></div>';}
+function fmtMY(s){const d=new Date(s);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()];return mo+" '"+String(d.getUTCFullYear()).slice(2);}
+function dateAxis(arr,fmt){fmt=fmt||fmtMD;const ds=(arr||[]).filter(p=>p&&p.date).map(p=>p.date);if(ds.length<2)return '';return '<div class="axis"><span>'+fmt(ds[0])+'</span><span>'+fmt(ds[Math.floor(ds.length/2)])+'</span><span>'+fmt(ds[ds.length-1])+'</span></div>';}
 function interp(txt){return txt?'<div class="interp">'+txt+'</div>':'';}
 function card(title,sub,inner,legend,extra){return '<div class="chartcard"><div class="h"><div class="t">'+title+'</div><div class="s">'+(sub||'')+'</div></div>'+inner+(legend?'<div class="legend">'+legend+'</div>':'')+(extra||'')+'</div>';}
 
@@ -250,6 +256,7 @@ async function renderTrends(){
   h+=card('Readiness',trendDays+' days',lineChart(d.readiness.map(r=>({v:r.v,date:r.date})),{color:'#f59e0b',min:0,max:100})+dateAxis(d.readiness),null,interp(ip.readiness)+interp(ip.link));
   h+=card('Sleep stages','hrs/night',stackedSleep(d.sleep)+dateAxis(d.sleep),'<span style="color:#1e3a8a">\u25A0</span> Deep <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light',interp(ip.sleep));
   h+=card('HRV','ms, last-night avg',lineChart(d.hrv.map(r=>({v:r.v,date:r.date})),{color:'#06b6d4'})+dateAxis(d.hrv),null,interp(ip.hrv));
+  if(d.steps&&d.steps.length)h+=card('Steps','daily',lineChart(d.steps.map(r=>({v:r.v,date:r.date})),{color:'#22d3ee',min:0})+dateAxis(d.steps),null,interp(ip.steps));
   h+=card('Training load (ACWR)','sweet spot 0.8\u20131.3',lineChart(d.acwr.map(r=>({v:r.v,date:r.date})),{color:'#a78bfa',band:[0.8,1.3],min:0.5,max:1.5})+dateAxis(d.acwr),null,interp(ip.acwr));
   if(d.weight&&d.weight.length)h+=card('Weight','kg (Withings)',lineChart(d.weight.map(r=>({v:r.v,date:r.date})),{color:'#34d399'})+dateAxis(d.weight),null,interp(ip.weight));
   $("body").innerHTML=h;
@@ -266,19 +273,17 @@ async function renderTraining(){
   h+='<div class="row"><div class="col stat"><div class="v">'+st.sessions_30d+'</div><div class="k">Sessions 30d</div></div>';
   h+='<div class="col stat"><div class="v" style="color:'+(st.sessions_7d>=st.target_per_week?'var(--grn)':'var(--amb)')+'">'+st.sessions_7d+'/'+st.target_per_week+'</div><div class="k">This week</div></div>';
   h+='<div class="col stat"><div class="v">'+st.sets_30d+'</div><div class="k">Sets 30d</div></div></div>';
-  if(st.weekly_volume&&st.weekly_volume.length){
-    const mx=Math.max.apply(null,st.weekly_volume.map(w=>w.volume))||1;
-    let bars='';st.weekly_volume.forEach(w=>{const wk=w.week.slice(5);bars+='<div class="bar"><div class="bl">'+wk+'</div><div class="bt"><div class="bf" style="width:'+(w.volume/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+(w.volume>=1000?(Math.round(w.volume/100)/10)+'k':w.volume)+'</div></div>';});
-    h+=card('Weekly volume trend','relative, last 8 weeks (kg)',bars);
-  }
-  if(st.recent&&st.recent.length){h+='<div class="st">Recent workouts</div>';st.recent.slice(0,5).forEach(w=>{h+='<div class="factor neu" style="border-left-color:#6366f1"><div class="mid"><div class="fl">'+(w.title||'Workout')+'</div><div class="fn">'+w.date+'</div></div><div><div class="fv">'+(w.sets||0)+' sets</div></div></div>';});}
+  if(d.muscle_balance){const mb=d.muscle_balance;const order=['Push','Pull','Legs','Core'];const mx=Math.max.apply(null,order.map(k=>mb[k]||0))||1;
+    let bars='';order.forEach(k=>{bars+='<div class="bar"><div class="bl">'+k+'</div><div class="bt"><div class="bf" style="width:'+((mb[k]||0)/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+(mb[k]||0)+'</div></div>';});
+    h+=card('Muscle balance','sessions hit, last 30d (from titles)',bars);}
+  if(st.recent&&st.recent.length){h+='<div class="st">Recent workouts</div>';st.recent.slice(0,5).forEach(w=>{h+='<div class="factor neu" style="border-left-color:#6366f1"><div class="mid"><div class="fl">'+(w.title||'Workout')+'</div><div class="fn">'+w.date+'</div></div><div><div class="fv">'+(w.sets||0)+' sets</div>'+(w.mins?'<div class="fd">'+w.mins+' min</div>':'')+'</div></div>';});}
   h+='<div class="st">Cardio \u2014 last 30 days</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+ca.sessions_30d+'</div><div class="k">Sessions</div></div>';
   h+='<div class="col stat"><div class="v">'+ca.distance_30d_km+'</div><div class="k">km total</div></div></div>';
-  const sc=ca.sport_counts||{};const sct=Object.keys(sc);
-  if(sct.length){let bars='';const mx=Math.max.apply(null,Object.values(sc))||1;const colors={Run:'#f59e0b',Swim:'#06b6d4',Ride:'#34d399',Other:'#8b96b0'};
-    sct.forEach(k=>{bars+='<div class="bar"><div class="bl">'+k+'</div><div class="bt"><div class="bf" style="width:'+(sc[k]/mx*100)+'%;background:'+(colors[k]||'#8b96b0')+'"></div></div><div class="bv">'+sc[k]+'</div></div>';});
-    h+=card('By sport','sessions',bars);}
+  const scnt=ca.sport_counts||{};const skm=ca.sport_km||{};const sct=Object.keys(scnt);
+  if(sct.length){let bars='';const mx=Math.max.apply(null,Object.values(scnt))||1;const colors={Run:'#f59e0b',Swim:'#06b6d4',Ride:'#34d399'};
+    sct.forEach(k=>{const km=skm[k]?(' \u00B7 '+skm[k]+'km'):'';bars+='<div class="bar"><div class="bl">'+k+'</div><div class="bt"><div class="bf" style="width:'+(scnt[k]/mx*100)+'%;background:'+(colors[k]||'#8b96b0')+'"></div></div><div class="bv">'+scnt[k]+km+'</div></div>';});
+    h+=card('By sport','sessions \u00B7 distance',bars);}
   if(ca.recent&&ca.recent.length){h+='<div class="st">Recent activities</div>';ca.recent.slice(0,5).forEach(c=>{h+='<div class="factor neu" style="border-left-color:#06b6d4"><div class="mid"><div class="fl">'+c.sport+'</div><div class="fn">'+c.date+'</div></div><div><div class="fv">'+c.km+' km</div><div class="fd">'+c.mins+' min</div></div></div>';});}
   const t=d.nutrition_targets||{};const wd=t.workout_day||{},rd=t.rest_day||{};
   const keys=['calories','protein','carbs','fats','fiber','water'];
@@ -300,9 +305,9 @@ async function renderGoals(){
   if(bc.dexa_bf!=null){const gap=Math.round((bc.dexa_bf-bc.goal_bf)*10)/10;h+='<div class="verdict">'+(gap>0?(gap+' points to go. Anchor fat-loss to DEXA, not the scale.'):'At/under goal \u2014 hold it.')+'</div>';}
   h+='</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+(bc.latest_weight??'\u2013')+'</div><div class="k">Weight kg</div></div>';
-  h+='<div class="col stat"><div class="v" style="font-size:15px">'+(bc.weight_as_of||'\u2013')+'</div><div class="k">As of</div></div></div>';
+  h+='<div class="col stat"><div class="v">'+(bc.bia_bf??'\u2013')+'%</div><div class="k">BIA body-fat</div></div></div>';
   if(bc.weight_history&&bc.weight_history.length>1)h+=card('Weight trend','kg',lineChart(bc.weight_history.map(w=>({v:w.kg,date:w.date})),{color:'#34d399'})+dateAxis(bc.weight_history.map(w=>({date:w.date}))));
-  if(bc.dexa_history&&bc.dexa_history.length>1)h+=card('Body-fat history (DEXA)','%',lineChart(bc.dexa_history.map(x=>({v:x.bf,date:x.date})),{color:'#f59e0b',timeScale:true})+dateAxis(bc.dexa_history));
+  if(bc.bia_history&&bc.bia_history.length>1)h+=card('Body-fat trend (BIA scale)','% \u00B7 Withings',lineChart(bc.bia_history.map(x=>({v:x.bf,date:x.date})),{color:'#f59e0b',timeScale:true})+dateAxis(bc.bia_history),null,'<div class="legend">Scale estimate (daily-ish). DEXA above is the source of truth.</div>');
   h+='<div class="st">Goals on the horizon</div>';
   const colors=['#6366f1','#06b6d4','#34d399','#f59e0b','#f97316','#ef4444'];
   (d.milestones||[]).forEach((m,i)=>{
@@ -317,23 +322,34 @@ async function renderGoals(){
 async function renderMedical(){
   const d=await api('medical');cache.medical=d;let h='';
   h+='<div class="card" style="background:var(--card2)"><div style="font-weight:700;margin-bottom:4px">Where to focus now</div>';
-  h+='<div class="muted">Based on your latest labs ('+(d.last_report||'\u2013')+'). Observations, not medical advice \u2014 discuss anything clinical with your doctor.</div>';
+  h+='<div class="muted">Latest labs ('+(d.last_report||'\u2013')+'). Observations, not medical advice \u2014 discuss clinical decisions with your doctor.</div>';
   if(d.focus&&d.focus.length)h+='<div style="margin-top:8px">'+d.focus.map(f=>'<span class="tag hi" style="margin-right:6px">'+f+'</span>').join('')+'</div>';
   h+='</div>';
+  if(d.notes&&d.notes.length){h+='<div class="card">';d.notes.forEach(n=>{h+='<div style="font-size:13px;line-height:1.55;margin:5px 0;padding-left:15px;text-indent:-11px">• '+n+'</div>';});h+='</div>';}
+  h+='<div class="st">Key markers</div>';
+  (d.key_markers||[]).forEach(m=>{
+    const flagged=m.status&&/high|low/i.test(m.status);
+    const tag=/high/i.test(m.status||'')?'<span class="tag hi">High</span>':/low/i.test(m.status||'')?'<span class="tag lo">Low</span>':'<span class="tag ok">In range</span>';
+    const border=flagged?(/high/i.test(m.status)?'var(--red)':'var(--amb)'):'var(--grn)';
+    let arrow='';if(m.prev_value!=null){const good=(m.direction==='up'&&m.higher_is_better)||(m.direction==='down'&&!m.higher_is_better);const bad=(m.direction==='up'&&!m.higher_is_better)||(m.direction==='down'&&m.higher_is_better);const col=good?'#86efac':bad?'#fca5a5':'var(--mut)';const ar=m.direction==='up'?'\u25B2':m.direction==='down'?'\u25BC':'\u2013';arrow=' <span style="color:'+col+';font-size:12px">'+ar+' from '+m.prev_value+'</span>';}
+    h+='<div class="mk" style="border-left-color:'+border+'"><div class="top"><div><span class="nm">'+m.metric+'</span> '+tag+'</div><div class="vl">'+m.value+' <span class="muted" style="font-size:12px">'+(m.unit||'')+'</span></div></div>';
+    h+='<div class="rg">'+(m.ref_low!=null?'ref '+m.ref_low+'\u2013'+(m.ref_high||''):(m.ref_high!=null?'ref <'+m.ref_high:''))+arrow+'</div>';
+    if(m.history&&m.history.length>1)h+='<div style="margin-top:8px">'+lineChart(m.history.map(x=>({v:x.v,date:x.date})),{color:flagged?'#fca5a5':'#86efac',h:54,timeScale:true})+dateAxis(m.history,fmtMY)+'</div>';
+    if(m.why)h+='<div class="wy">'+m.why+'</div>';
+    h+='</div>';
+  });
   (d.sections||[]).forEach(sec=>{
     h+='<div class="st">'+sec.group+(sec.flagged?' \u00B7 <span style="color:#fca5a5">'+sec.flagged+' flagged</span>':'')+'</div>';
-    (sec.markers||[]).forEach(m=>{
-      const flagged=m.status&&/high|low/i.test(m.status);
-      const tag=/high/i.test(m.status||'')?'<span class="tag hi">High</span>':/low/i.test(m.status||'')?'<span class="tag lo">Low</span>':'<span class="tag ok">In range</span>';
-      const border=flagged?(/high/i.test(m.status)?'var(--red)':'var(--amb)'):'var(--grn)';
-      let arrow='';if(m.prev_value!=null){const good=(m.direction==='up'&&m.higher_is_better)||(m.direction==='down'&&!m.higher_is_better);const bad=(m.direction==='up'&&!m.higher_is_better)||(m.direction==='down'&&m.higher_is_better);const col=good?'#86efac':bad?'#fca5a5':'var(--mut)';const ar=m.direction==='up'?'\u25B2':m.direction==='down'?'\u25BC':'\u2013';arrow=' <span style="color:'+col+';font-size:12px">'+ar+' from '+m.prev_value+'</span>';}
-      h+='<div class="mk" style="border-left-color:'+border+'"><div class="top"><div><span class="nm">'+m.metric+'</span> '+tag+'</div><div class="vl">'+m.value+' <span class="muted" style="font-size:12px">'+(m.unit||'')+'</span></div></div>';
-      h+='<div class="rg">'+(m.ref_low!=null?'ref '+m.ref_low+'\u2013'+(m.ref_high||''):(m.ref_high!=null?'ref <'+m.ref_high:''))+arrow+'</div>';
-      if(m.history&&m.history.length>1)h+='<div style="margin-top:8px">'+lineChart(m.history.map(x=>({v:x.v,date:x.date})),{color:flagged?'#fca5a5':'#86efac',h:54,timeScale:true})+dateAxis(m.history)+'</div>';
-      if(m.why)h+='<div class="wy">'+m.why+'</div>';
-      h+='</div>';
+    h+='<div class="card" style="padding:4px 14px"><table class="mtable">';
+    h+='<tr><td class="muted">Marker</td><td class="muted" style="text-align:right">Latest</td><td class="muted" style="text-align:right">vs prev</td></tr>';
+    sec.markers.forEach(m=>{
+      const tag=/high/i.test(m.status||'')?' <span class="tag hi">Hi</span>':/low/i.test(m.status||'')?' <span class="tag lo">Lo</span>':'';
+      let cell='\u2013';if(m.prev_value!=null){const good=(m.direction==='up'&&m.higher_is_better)||(m.direction==='down'&&!m.higher_is_better);const bad=(m.direction==='up'&&!m.higher_is_better)||(m.direction==='down'&&m.higher_is_better);const col=good?'#86efac':bad?'#fca5a5':'var(--mut)';const ar=m.direction==='up'?'\u25B2':m.direction==='down'?'\u25BC':'\u2013';cell='<span style="color:'+col+'">'+ar+' '+m.prev_value+'</span>';}
+      h+='<tr><td>'+m.metric+tag+'</td><td style="text-align:right;font-weight:700">'+m.value+' <span class="muted">'+(m.unit||'')+'</span></td><td style="text-align:right;font-size:12px">'+cell+'</td></tr>';
     });
+    h+='</table></div>';
   });
+  if(d.panel_size)h+='<div class="muted" style="text-align:center;margin:16px 4px 4px">Showing trended & flagged markers \u00B7 full panel has '+d.panel_size+' markers from your last report.</div>';
   $("body").innerHTML=h;
 }
 
