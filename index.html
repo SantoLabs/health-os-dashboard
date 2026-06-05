@@ -89,6 +89,16 @@
   .nav button.on{color:var(--ind)}
   .legend{font-size:10px;color:var(--mut);margin-top:5px}
   .legend span{font-weight:800}
+  .chartwrap{position:relative;touch-action:pan-y}
+  .cross{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.35);display:none;pointer-events:none}
+  .ctip{position:absolute;top:0;transform:translate(-50%,-115%);background:#0b1020;border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:11px;font-weight:600;white-space:nowrap;display:none;pointer-events:none;z-index:40;color:var(--mut)}
+  .ctip b{color:#fff}
+  .tapnote{font-size:10px;color:var(--mut);text-align:center;margin:2px 0 8px}
+  .exwrap{padding:2px 13px 10px}
+  .exrow{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:5px 0;border-top:1px solid var(--line)}
+  .exrow .em{color:var(--mut);text-transform:capitalize;font-size:11px}
+  .chev{color:var(--mut);font-weight:600;display:inline-block;transition:transform .15s}
+  .chev.open{transform:rotate(90deg)}
 </style></head>
 <body>
 <div id="login" class="login hidden">
@@ -269,20 +279,55 @@ function dateAxis(arr,fmt){fmt=fmt||fmtMD;const ds=(arr||[]).filter(p=>p&&p.date
 function interp(txt){return txt?'<div class="interp">'+txt+'</div>':'';}
 function card(title,sub,inner,legend,extra){return '<div class="chartcard"><div class="h"><div class="t">'+title+'</div><div class="s">'+(sub||'')+'</div></div>'+inner+(legend?'<div class="legend">'+legend+'</div>':'')+(extra||'')+'</div>';}
 
+/* ---------- interactive chart wrappers (Batch 2): tap/drag to read values ---------- */
+function iChart(points,opts){
+  opts=opts||{};
+  const svg=lineChart(points,opts);
+  if(!points||!points.length)return svg;
+  const W=480,P=6;let xs;
+  if(opts.timeScale&&points.every(p=>p.date)){const ts=points.map(p=>+new Date(p.date));const t0=Math.min.apply(null,ts),t1=Math.max.apply(null,ts);xs=ts.map(t=>(P+((t1===t0)?0:(t-t0)/(t1-t0))*(W-2*P))/W);}
+  else{const n=points.length;xs=points.map((p,i)=>(P+(n<=1?0:i/(n-1))*(W-2*P))/W);}
+  const ser=points.map((p,i)=>({x:Math.round(xs[i]*1000)/1000,v:p.v,d:p.date?fmtMDName(p.date):''}));
+  return '<div class="chartwrap" data-series="'+encodeURIComponent(JSON.stringify(ser))+'" data-unit="'+(opts.unit||'')+'">'+svg+'<div class="cross"></div><div class="ctip"></div></div>';
+}
+function iSleep(points){
+  const svg=stackedSleep(points);
+  if(!points||!points.length)return svg;
+  const W=480,P=4,n=points.length,step=(W-2*P)/n;
+  const ser=points.map((p,i)=>({x:Math.round(((P+i*step+step/2)/W)*1000)/1000,d:p.date?fmtMDName(p.date):'',total:p.total,deep:p.deep,rem:p.rem,light:p.light}));
+  return '<div class="chartwrap" data-sleep="'+encodeURIComponent(JSON.stringify(ser))+'">'+svg+'<div class="cross"></div><div class="ctip"></div></div>';
+}
+function chartShow(wrap,clientX){
+  const rect=wrap.getBoundingClientRect();if(!rect.width)return;
+  let f=(clientX-rect.left)/rect.width;f=Math.max(0,Math.min(1,f));
+  const cross=wrap.querySelector('.cross'),tip=wrap.querySelector('.ctip');if(!cross||!tip)return;
+  let html='',px=0;
+  if(wrap.dataset.sleep){let ser;try{ser=JSON.parse(decodeURIComponent(wrap.dataset.sleep));}catch(e){return;}if(!ser.length)return;let best=0,bd=9;ser.forEach((p,i)=>{const dd=Math.abs(p.x-f);if(dd<bd){bd=dd;best=i;}});const p=ser[best];px=p.x*rect.width;const hrs=p.total!=null?(Math.round(p.total/6)/10)+'h':'\u2013';html=(p.d?p.d+': ':'')+'<b>'+hrs+'</b> \u00B7 D'+(p.deep||0)+' R'+(p.rem||0)+' L'+(p.light||0);}
+  else{let ser;try{ser=JSON.parse(decodeURIComponent(wrap.dataset.series||''));}catch(e){return;}if(!ser.length)return;let best=-1,bd=9;ser.forEach((p,i)=>{if(p.v==null)return;const dd=Math.abs(p.x-f);if(dd<bd){bd=dd;best=i;}});if(best<0)return;const p=ser[best];px=p.x*rect.width;let v=p.v;if(typeof v==='number'&&!Number.isInteger(v))v=Math.round(v*10)/10;html=(p.d?p.d+': ':'')+'<b>'+v+(wrap.dataset.unit||'')+'</b>';}
+  cross.style.left=px+'px';cross.style.display='block';
+  tip.innerHTML=html;tip.style.display='block';
+  const tw=tip.offsetWidth||60;let lx=px,tx='-50%';if(px<tw/2){lx=2;tx='0';}else if(px>rect.width-tw/2){lx=rect.width-2;tx='-100%';}
+  tip.style.left=lx+'px';tip.style.transform='translate('+tx+',-115%)';
+}
+function chartHide(){document.querySelectorAll('.chartwrap').forEach(w=>{const c=w.querySelector('.cross'),t=w.querySelector('.ctip');if(c)c.style.display='none';if(t)t.style.display='none';});}
+function chartEvt(e){const tgt=e.target;const wrap=(tgt&&tgt.closest)?tgt.closest('.chartwrap'):null;if(!wrap){chartHide();return;}const cx=(e.touches&&e.touches[0])?e.touches[0].clientX:e.clientX;if(cx==null)return;chartShow(wrap,cx);}
+function toggleEx(i){const el=$("ex"+i);const cv=$("chev"+i);if(el)el.classList.toggle('hidden');if(cv)cv.classList.toggle('open');}
+
 /* ---------- TRENDS ---------- */
 async function renderTrends(){
   const d=await api('trends&days='+trendDays);cache.trends=d;const ip=d.interpretation||{};
   let h='<div class="seg">';[30,60,90].forEach(dd=>{h+='<button class="'+(trendDays===dd?'on':'')+'" onclick="setTrendDays('+dd+')">'+dd+'d</button>';});h+='</div>';
+  h+='<div class="tapnote">Tap or drag across any chart to read exact values.</div>';
   const s=d.summary||{};
   h+='<div class="row"><div class="col stat"><div class="v" style="color:'+scoreColor(s.avg_readiness)+'">'+(s.avg_readiness??'\u2013')+'</div><div class="k">Avg readiness</div></div>';
   h+='<div class="col stat"><div class="v">'+(s.avg_sleep_h??'\u2013')+'h</div><div class="k">Avg sleep</div></div>';
   h+='<div class="col stat"><div class="v">'+(s.avg_hrv??'\u2013')+'</div><div class="k">Avg HRV</div></div></div>';
-  h+=card('Readiness',trendDays+' days',lineChart(d.readiness.map(r=>({v:r.v,date:r.date})),{color:'#f59e0b',min:0,max:100})+dateAxis(d.readiness,fmtMDName),null,interp(ip.readiness)+interp(ip.link));
-  h+=card('Sleep stages','hrs/night',stackedSleep(d.sleep)+dateAxis(d.sleep,fmtMDName),'<span style="color:#1e3a8a">\u25A0</span> Deep <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light',interp(ip.sleep));
-  h+=card('HRV','ms, last-night avg',lineChart(d.hrv.map(r=>({v:r.v,date:r.date})),{color:'#06b6d4'})+dateAxis(d.hrv,fmtMDName),null,interp(ip.hrv));
-  if(d.steps&&d.steps.length)h+=card('Steps','daily',lineChart(d.steps.map(r=>({v:r.v,date:r.date})),{color:'#22d3ee',min:0})+dateAxis(d.steps,fmtMDName),null,interp(ip.steps));
-  h+=card('Training load (ACWR)','sweet spot 0.8\u20131.3',lineChart(d.acwr.map(r=>({v:r.v,date:r.date})),{color:'#a78bfa',band:[0.8,1.3],min:0.5,max:1.5})+dateAxis(d.acwr,fmtMDName),null,interp(ip.acwr));
-  if(d.weight&&d.weight.length)h+=card('Weight','kg (Withings)',lineChart(d.weight.map(r=>({v:r.v,date:r.date})),{color:'#34d399'})+dateAxis(d.weight,fmtMDName),null,interp(ip.weight));
+  h+=card('Readiness',trendDays+' days',iChart(d.readiness.map(r=>({v:r.v,date:r.date})),{color:'#f59e0b',min:0,max:100})+dateAxis(d.readiness,fmtMDName),null,interp(ip.readiness)+interp(ip.link));
+  h+=card('Sleep stages','hrs/night \u00B7 tap a bar',iSleep(d.sleep)+dateAxis(d.sleep,fmtMDName),'<span style="color:#1e3a8a">\u25A0</span> Deep <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light',interp(ip.sleep));
+  h+=card('HRV','ms, last-night avg',iChart(d.hrv.map(r=>({v:r.v,date:r.date})),{color:'#06b6d4',unit:' ms'})+dateAxis(d.hrv,fmtMDName),null,interp(ip.hrv));
+  if(d.steps&&d.steps.length)h+=card('Steps','daily',iChart(d.steps.map(r=>({v:r.v,date:r.date})),{color:'#22d3ee',min:0})+dateAxis(d.steps,fmtMDName),null,interp(ip.steps));
+  h+=card('Training load (ACWR)','sweet spot 0.8\u20131.3',iChart(d.acwr.map(r=>({v:r.v,date:r.date})),{color:'#a78bfa',band:[0.8,1.3],min:0.5,max:1.5})+dateAxis(d.acwr,fmtMDName),null,interp(ip.acwr));
+  if(d.weight&&d.weight.length)h+=card('Weight','kg (Withings)',iChart(d.weight.map(r=>({v:r.v,date:r.date})),{color:'#34d399',unit:' kg'})+dateAxis(d.weight,fmtMDName),null,interp(ip.weight));
   $("body").innerHTML=h;
 }
 function setTrendDays(dd){trendDays=dd;go('trends');}
@@ -300,7 +345,11 @@ async function renderTraining(){
   if(d.muscle_balance&&d.muscle_balance.length){const mb=d.muscle_balance;const mx=Math.max.apply(null,mb.map(m=>m.sets))||1;
     let bars='';mb.forEach(m=>{bars+='<div class="bar"><div class="bl" style="text-transform:capitalize">'+m.muscle.replace(/_/g,' ')+'</div><div class="bt"><div class="bf" style="width:'+(m.sets/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+m.sets+' sets</div></div>';});
     h+=card('Muscle balance','sets per muscle group, last 30d',bars);}
-  if(st.recent&&st.recent.length){h+='<div class="st">Recent workouts</div>';st.recent.slice(0,5).forEach(w=>{h+='<div class="factor neu" style="border-left-color:#6366f1"><div class="mid"><div class="fl">'+(w.title||'Workout')+'</div><div class="fn">'+w.date+'</div></div><div><div class="fv">'+(w.sets||0)+' sets</div>'+(w.mins?'<div class="fd">'+w.mins+' min</div>':'')+'</div></div>';});}
+  if(st.recent&&st.recent.length){h+='<div class="st">Recent workouts \u00B7 tap to expand</div>';st.recent.slice(0,5).forEach((w,wi)=>{
+    const exs=w.exercises||[];const hasx=exs.length>0;
+    h+='<div class="factor neu" style="border-left-color:#6366f1'+(hasx?';cursor:pointer':'')+'"'+(hasx?' onclick="toggleEx('+wi+')"':'')+'><div class="mid"><div class="fl">'+(hasx?'<span class="chev" id="chev'+wi+'">›</span> ':'')+(w.title||'Workout')+'</div><div class="fn">'+w.date+'</div></div><div><div class="fv">'+(w.sets||0)+' sets</div>'+(w.mins?'<div class="fd">'+w.mins+' min</div>':'')+'</div></div>';
+    if(hasx){let ex='<div class="exwrap hidden" id="ex'+wi+'">';exs.forEach(e=>{ex+='<div class="exrow"><div>'+e.title+(e.muscle?' <span class="em">'+e.muscle.replace(/_/g,' ')+'</span>':'')+'</div><div style="white-space:nowrap;color:var(--mut)">'+(e.sets||0)+' sets'+(e.vol?' \u00B7 '+e.vol+'kg':'')+'</div></div>';});ex+='</div>';h+=ex;}
+  });}
   h+='<div class="st">Cardio \u2014 last 30 days</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+ca.sessions_30d+'</div><div class="k">Sessions</div></div>';
   h+='<div class="col stat"><div class="v">'+ca.distance_30d_km+'</div><div class="k">km total</div></div></div>';
@@ -330,8 +379,8 @@ async function renderGoals(){
   h+='</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+(bc.latest_weight??'\u2013')+'</div><div class="k">Weight kg</div></div>';
   h+='<div class="col stat"><div class="v">'+(bc.bia_bf??'\u2013')+'%</div><div class="k">BIA body-fat</div></div></div>';
-  if(bc.weight_history&&bc.weight_history.length>1)h+=card('Weight trend','kg',lineChart(bc.weight_history.map(w=>({v:w.kg,date:w.date})),{color:'#34d399'})+dateAxis(bc.weight_history.map(w=>({date:w.date})),fmtMDName));
-  if(bc.bia_history&&bc.bia_history.length>1)h+=card('Body-fat trend (BIA scale)','% \u00B7 Withings',lineChart(bc.bia_history.map(x=>({v:x.bf,date:x.date})),{color:'#f59e0b',timeScale:true})+dateAxis(bc.bia_history,fmtMDName),null,'<div class="legend">Scale estimate (daily-ish). DEXA above is the source of truth.</div>');
+  if(bc.weight_history&&bc.weight_history.length>1)h+=card('Weight trend','kg',iChart(bc.weight_history.map(w=>({v:w.kg,date:w.date})),{color:'#34d399',unit:' kg'})+dateAxis(bc.weight_history.map(w=>({date:w.date})),fmtMDName));
+  if(bc.bia_history&&bc.bia_history.length>1)h+=card('Body-fat trend (BIA scale)','% \u00B7 Withings',iChart(bc.bia_history.map(x=>({v:x.bf,date:x.date})),{color:'#f59e0b',timeScale:true,unit:'%'})+dateAxis(bc.bia_history,fmtMDName),null,'<div class="legend">Scale estimate (daily-ish). DEXA above is the source of truth.</div>');
   h+='<div class="st">Goals on the horizon</div>';
   const colors=['#6366f1','#06b6d4','#34d399','#f59e0b','#f97316','#ef4444'];
   (d.milestones||[]).forEach((m,i)=>{
@@ -350,7 +399,7 @@ async function renderMedical(){
   if(d.focus&&d.focus.length)h+='<div style="margin-top:8px">'+d.focus.map(f=>'<span class="tag hi" style="margin-right:6px">'+f+'</span>').join('')+'</div>';
   h+='</div>';
   if(d.notes&&d.notes.length){h+='<div class="card">';d.notes.forEach(n=>{h+='<div style="font-size:13px;line-height:1.55;margin:5px 0;padding-left:15px;text-indent:-11px">• '+n+'</div>';});h+='</div>';}
-  h+='<div class="st">Key markers</div>';
+  h+='<div class="st">Key markers \u00B7 tap chart to read values</div>';
   (d.key_markers||[]).forEach(m=>{
     const flagged=m.status&&/high|low/i.test(m.status);
     const tag=/high/i.test(m.status||'')?'<span class="tag hi">High</span>':/low/i.test(m.status||'')?'<span class="tag lo">Low</span>':'<span class="tag ok">In range</span>';
@@ -358,7 +407,7 @@ async function renderMedical(){
     let arrow='';if(m.prev_value!=null){const good=(m.direction==='up'&&m.higher_is_better)||(m.direction==='down'&&!m.higher_is_better);const bad=(m.direction==='up'&&!m.higher_is_better)||(m.direction==='down'&&m.higher_is_better);const col=good?'#86efac':bad?'#fca5a5':'var(--mut)';const ar=m.direction==='up'?'\u25B2':m.direction==='down'?'\u25BC':'\u2013';arrow=' <span style="color:'+col+';font-size:12px">'+ar+' from '+m.prev_value+'</span>';}
     h+='<div class="mk" style="border-left-color:'+border+'"><div class="top"><div><span class="nm">'+m.metric+'</span> '+tag+'</div><div class="vl">'+m.value+' <span class="muted" style="font-size:12px">'+(m.unit||'')+'</span></div></div>';
     h+='<div class="rg">'+(m.ref_low!=null?'ref '+m.ref_low+'\u2013'+(m.ref_high||''):(m.ref_high!=null?'ref <'+m.ref_high:''))+arrow+'</div>';
-    if(m.history&&m.history.length>1)h+='<div style="margin-top:8px">'+lineChart(m.history.map(x=>({v:x.v,date:x.date})),{color:flagged?'#fca5a5':'#86efac',h:54,timeScale:true})+dateAxis(m.history,fmtMY)+'</div>';
+    if(m.history&&m.history.length>1)h+='<div style="margin-top:8px">'+iChart(m.history.map(x=>({v:x.v,date:x.date})),{color:flagged?'#fca5a5':'#86efac',h:54,timeScale:true,unit:(m.unit?' '+m.unit:'')})+dateAxis(m.history,fmtMY)+'</div>';
     if(m.why)h+='<div class="wy">'+m.why+'</div>';
     h+='</div>';
   });
@@ -377,6 +426,12 @@ async function renderMedical(){
   $("body").innerHTML=h;
 }
 
+document.addEventListener('pointermove',chartEvt,{passive:true});
+document.addEventListener('pointerdown',chartEvt,{passive:true});
+document.addEventListener('touchstart',chartEvt,{passive:true});
+document.addEventListener('touchmove',chartEvt,{passive:true});
+document.addEventListener('pointerup',chartHide,{passive:true});
+document.addEventListener('touchend',chartHide,{passive:true});
 boot();
 </script>
 </body></html>
