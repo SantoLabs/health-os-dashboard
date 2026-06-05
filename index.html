@@ -60,7 +60,7 @@
   svg{display:block;width:100%;overflow:visible}
   .interp{font-size:12.5px;color:var(--txt);background:var(--card2);border-radius:9px;padding:9px 11px;margin-top:9px;line-height:1.5}
   .bar{display:flex;align-items:center;gap:10px;margin:6px 0}
-  .bar .bl{width:64px;font-size:12px;color:var(--mut)}
+  .bar .bl{width:84px;font-size:12px;color:var(--mut)}
   .bar .bt{flex:1;background:#0e1428;border-radius:6px;height:16px;overflow:hidden}
   .bar .bf{height:16px;border-radius:6px}
   .bar .bv{width:86px;text-align:right;font-size:12px;font-weight:700}
@@ -107,6 +107,7 @@
   <div class="topbar"><div><h2 id="viewTitle">Today</h2><div class="who" id="lastSync"></div></div>
     <div style="text-align:right"><div class="who" id="who"></div><div style="display:flex;gap:4px;justify-content:flex-end;margin-top:2px"><button class="btn-ghost" id="refreshBtn" onclick="refresh()">↻ Refresh</button><button class="btn-ghost" onclick="doLogout()">Sign out</button></div></div>
   </div>
+  <div id="syncbar" style="height:3px;background:linear-gradient(90deg,#6366f1,#22d3ee);width:0;border-radius:2px;transition:width .5s ease;display:none;margin-bottom:6px"></div>
   <div id="body"><div class="spin">Loading\u2026</div></div>
 </div>
 <div id="toast" class="toast"></div>
@@ -124,8 +125,11 @@ const SB_URL="https://ntzlmclojiehhrzkgnsp.supabase.co", SB_ANON="sb_publishable
 const sb=window.supabase.createClient(SB_URL,SB_ANON);
 const $=(id)=>document.getElementById(id);
 let TOKEN=null, cache={}, trendDays=30, toastT=null;
-
+const SPORT_COL={Run:'#f59e0b',Swim:'#06b6d4',Ride:'#34d399',Other:'#8b96b0'};
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function showToast(msg){const t=$("toast");t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900);}
+function syncBar(frac){const b=$("syncbar");if(!b)return;b.style.display='block';b.style.width=Math.min(98,Math.round(frac*100))+'%';}
+function syncBarDone(){const b=$("syncbar");if(!b)return;b.style.width='100%';setTimeout(()=>{b.style.display='none';b.style.width='0';},600);}
 
 async function boot(){
   const {data:{session}}=await sb.auth.getSession();
@@ -157,7 +161,26 @@ async function api(route){
 
 function relTime(iso){if(!iso)return '';const s=(Date.now()-new Date(iso).getTime())/1000;if(s<90)return 'just now';const m=Math.round(s/60);if(m<60)return m+'m ago';const h=Math.round(m/60);if(h<24)return h+'h ago';return Math.round(h/24)+'d ago';}
 function setLastSync(d){if(d&&d.last_synced){$("lastSync").textContent='Synced '+relTime(d.last_synced)+(d.data_through?' \u00B7 data through '+d.data_through:'');}}
-async function refresh(){const b=$("refreshBtn");if(b)b.textContent='↻ …';cache={};const cur=document.querySelector('.nav button.on');await go(cur?cur.dataset.v:'today');if(b)b.textContent='↻ Refresh';showToast('Updated ✓');}
+
+/* Refresh = real Garmin device re-pull (GitHub Actions), polled until last_synced advances. */
+async function refresh(){
+  const cur=document.querySelector('.nav button.on');const view=cur?cur.dataset.v:'today';
+  const b=$("refreshBtn");
+  let before=cache.today&&cache.today.last_synced;
+  if(!before){try{before=(await api('today')).last_synced;}catch(e){}}
+  if(b)b.textContent='↻ Syncing…';syncBar(0.05);
+  try{await fetch(API+"?api=resync&apikey="+SB_ANON,{method:'POST',headers:{Authorization:'Bearer '+TOKEN}});}catch(e){}
+  const t0=Date.now(),MAX=180000;let done=false;
+  while(Date.now()-t0<MAX){
+    await sleep(5000);
+    syncBar(0.05+0.92*((Date.now()-t0)/MAX));
+    let td=null;try{td=await api('today');}catch(e){}
+    if(td&&td.last_synced&&(!before||new Date(td.last_synced)>new Date(before))){done=true;cache.today=td;break;}
+  }
+  syncBarDone();cache={};if(b)b.textContent='↻ Refresh';
+  await go(view);
+  showToast(done?'Device re-synced ✓':'Sync still running — showing latest');
+}
 
 const TITLES={today:"Today",trends:"Trends",training:"Training & Diet",goals:"Goals & Body",medical:"Medical"};
 async function go(v){
@@ -240,7 +263,8 @@ function stackedSleep(points){
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:'+H+'px">'+s+'</svg>';
 }
 function fmtMD(s){const d=new Date(s);return (d.getUTCMonth()+1)+'/'+d.getUTCDate();}
-function fmtMY(s){const d=new Date(s);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()];return mo+" '"+String(d.getUTCFullYear()).slice(2);}
+function fmtMDName(s){const d=new Date(s);return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]+' '+d.getUTCDate();}
+function fmtMY(s){const d=new Date(s);return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]+" '"+String(d.getUTCFullYear()).slice(2);}
 function dateAxis(arr,fmt){fmt=fmt||fmtMD;const ds=(arr||[]).filter(p=>p&&p.date).map(p=>p.date);if(ds.length<2)return '';return '<div class="axis"><span>'+fmt(ds[0])+'</span><span>'+fmt(ds[Math.floor(ds.length/2)])+'</span><span>'+fmt(ds[ds.length-1])+'</span></div>';}
 function interp(txt){return txt?'<div class="interp">'+txt+'</div>':'';}
 function card(title,sub,inner,legend,extra){return '<div class="chartcard"><div class="h"><div class="t">'+title+'</div><div class="s">'+(sub||'')+'</div></div>'+inner+(legend?'<div class="legend">'+legend+'</div>':'')+(extra||'')+'</div>';}
@@ -253,12 +277,12 @@ async function renderTrends(){
   h+='<div class="row"><div class="col stat"><div class="v" style="color:'+scoreColor(s.avg_readiness)+'">'+(s.avg_readiness??'\u2013')+'</div><div class="k">Avg readiness</div></div>';
   h+='<div class="col stat"><div class="v">'+(s.avg_sleep_h??'\u2013')+'h</div><div class="k">Avg sleep</div></div>';
   h+='<div class="col stat"><div class="v">'+(s.avg_hrv??'\u2013')+'</div><div class="k">Avg HRV</div></div></div>';
-  h+=card('Readiness',trendDays+' days',lineChart(d.readiness.map(r=>({v:r.v,date:r.date})),{color:'#f59e0b',min:0,max:100})+dateAxis(d.readiness),null,interp(ip.readiness)+interp(ip.link));
-  h+=card('Sleep stages','hrs/night',stackedSleep(d.sleep)+dateAxis(d.sleep),'<span style="color:#1e3a8a">\u25A0</span> Deep <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light',interp(ip.sleep));
-  h+=card('HRV','ms, last-night avg',lineChart(d.hrv.map(r=>({v:r.v,date:r.date})),{color:'#06b6d4'})+dateAxis(d.hrv),null,interp(ip.hrv));
-  if(d.steps&&d.steps.length)h+=card('Steps','daily',lineChart(d.steps.map(r=>({v:r.v,date:r.date})),{color:'#22d3ee',min:0})+dateAxis(d.steps),null,interp(ip.steps));
-  h+=card('Training load (ACWR)','sweet spot 0.8\u20131.3',lineChart(d.acwr.map(r=>({v:r.v,date:r.date})),{color:'#a78bfa',band:[0.8,1.3],min:0.5,max:1.5})+dateAxis(d.acwr),null,interp(ip.acwr));
-  if(d.weight&&d.weight.length)h+=card('Weight','kg (Withings)',lineChart(d.weight.map(r=>({v:r.v,date:r.date})),{color:'#34d399'})+dateAxis(d.weight),null,interp(ip.weight));
+  h+=card('Readiness',trendDays+' days',lineChart(d.readiness.map(r=>({v:r.v,date:r.date})),{color:'#f59e0b',min:0,max:100})+dateAxis(d.readiness,fmtMDName),null,interp(ip.readiness)+interp(ip.link));
+  h+=card('Sleep stages','hrs/night',stackedSleep(d.sleep)+dateAxis(d.sleep,fmtMDName),'<span style="color:#1e3a8a">\u25A0</span> Deep <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light',interp(ip.sleep));
+  h+=card('HRV','ms, last-night avg',lineChart(d.hrv.map(r=>({v:r.v,date:r.date})),{color:'#06b6d4'})+dateAxis(d.hrv,fmtMDName),null,interp(ip.hrv));
+  if(d.steps&&d.steps.length)h+=card('Steps','daily',lineChart(d.steps.map(r=>({v:r.v,date:r.date})),{color:'#22d3ee',min:0})+dateAxis(d.steps,fmtMDName),null,interp(ip.steps));
+  h+=card('Training load (ACWR)','sweet spot 0.8\u20131.3',lineChart(d.acwr.map(r=>({v:r.v,date:r.date})),{color:'#a78bfa',band:[0.8,1.3],min:0.5,max:1.5})+dateAxis(d.acwr,fmtMDName),null,interp(ip.acwr));
+  if(d.weight&&d.weight.length)h+=card('Weight','kg (Withings)',lineChart(d.weight.map(r=>({v:r.v,date:r.date})),{color:'#34d399'})+dateAxis(d.weight,fmtMDName),null,interp(ip.weight));
   $("body").innerHTML=h;
 }
 function setTrendDays(dd){trendDays=dd;go('trends');}
@@ -273,23 +297,23 @@ async function renderTraining(){
   h+='<div class="row"><div class="col stat"><div class="v">'+st.sessions_30d+'</div><div class="k">Sessions 30d</div></div>';
   h+='<div class="col stat"><div class="v" style="color:'+(st.sessions_7d>=st.target_per_week?'var(--grn)':'var(--amb)')+'">'+st.sessions_7d+'/'+st.target_per_week+'</div><div class="k">This week</div></div>';
   h+='<div class="col stat"><div class="v">'+st.sets_30d+'</div><div class="k">Sets 30d</div></div></div>';
-  if(d.muscle_balance){const mb=d.muscle_balance;const order=['Push','Pull','Legs','Core'];const mx=Math.max.apply(null,order.map(k=>mb[k]||0))||1;
-    let bars='';order.forEach(k=>{bars+='<div class="bar"><div class="bl">'+k+'</div><div class="bt"><div class="bf" style="width:'+((mb[k]||0)/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+(mb[k]||0)+'</div></div>';});
-    h+=card('Muscle balance','sessions hit, last 30d (from titles)',bars);}
+  if(d.muscle_balance){const mb=d.muscle_balance;const order=['Chest','Back','Shoulders','Biceps','Triceps','Legs','Glutes/Hams','Core'];const keys=order.filter(k=>k in mb);const mx=Math.max.apply(null,keys.map(k=>mb[k]||0))||1;
+    let bars='';keys.forEach(k=>{bars+='<div class="bar"><div class="bl">'+k+'</div><div class="bt"><div class="bf" style="width:'+((mb[k]||0)/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+(mb[k]||0)+'</div></div>';});
+    h+=card('Muscle balance','session-hits, last 30d (from titles)',bars);}
   if(st.recent&&st.recent.length){h+='<div class="st">Recent workouts</div>';st.recent.slice(0,5).forEach(w=>{h+='<div class="factor neu" style="border-left-color:#6366f1"><div class="mid"><div class="fl">'+(w.title||'Workout')+'</div><div class="fn">'+w.date+'</div></div><div><div class="fv">'+(w.sets||0)+' sets</div>'+(w.mins?'<div class="fd">'+w.mins+' min</div>':'')+'</div></div>';});}
   h+='<div class="st">Cardio \u2014 last 30 days</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+ca.sessions_30d+'</div><div class="k">Sessions</div></div>';
   h+='<div class="col stat"><div class="v">'+ca.distance_30d_km+'</div><div class="k">km total</div></div></div>';
   const scnt=ca.sport_counts||{};const skm=ca.sport_km||{};const sct=Object.keys(scnt);
-  if(sct.length){let bars='';const mx=Math.max.apply(null,Object.values(scnt))||1;const colors={Run:'#f59e0b',Swim:'#06b6d4',Ride:'#34d399'};
-    sct.forEach(k=>{const km=skm[k]?(' \u00B7 '+skm[k]+'km'):'';bars+='<div class="bar"><div class="bl">'+k+'</div><div class="bt"><div class="bf" style="width:'+(scnt[k]/mx*100)+'%;background:'+(colors[k]||'#8b96b0')+'"></div></div><div class="bv">'+scnt[k]+km+'</div></div>';});
+  if(sct.length){let bars='';const mx=Math.max.apply(null,Object.values(scnt))||1;
+    sct.forEach(k=>{const km=skm[k]?(' \u00B7 '+skm[k]+'km'):'';bars+='<div class="bar"><div class="bl">'+k+'</div><div class="bt"><div class="bf" style="width:'+(scnt[k]/mx*100)+'%;background:'+(SPORT_COL[k]||'#8b96b0')+'"></div></div><div class="bv">'+scnt[k]+km+'</div></div>';});
     h+=card('By sport','sessions \u00B7 distance',bars);}
-  if(ca.recent&&ca.recent.length){h+='<div class="st">Recent activities</div>';ca.recent.slice(0,5).forEach(c=>{h+='<div class="factor neu" style="border-left-color:#06b6d4"><div class="mid"><div class="fl">'+c.sport+'</div><div class="fn">'+c.date+'</div></div><div><div class="fv">'+c.km+' km</div><div class="fd">'+c.mins+' min</div></div></div>';});}
+  if(ca.recent&&ca.recent.length){h+='<div class="st">Recent activities</div>';ca.recent.slice(0,5).forEach(c=>{const col=SPORT_COL[c.sport]||'#8b96b0';h+='<div class="factor neu" style="border-left-color:'+col+'"><div class="mid"><div class="fl">'+c.sport+'</div><div class="fn">'+c.date+'</div></div><div><div class="fv">'+c.km+' km</div><div class="fd">'+c.mins+' min</div></div></div>';});}
   const t=d.nutrition_targets||{};const wd=t.workout_day||{},rd=t.rest_day||{};
-  const keys=['calories','protein','carbs','fats','fiber','water'];
+  const keys2=['calories','protein','carbs','fats','fiber','water'];
   if(Object.keys(wd).length){h+='<div class="st">Nutrition targets</div><div class="card">';
     h+='<table style="width:100%;border-collapse:collapse;font-size:13px"><tr><td class="muted" style="padding:5px 0"></td><td class="muted" style="text-align:right">Workout day</td><td class="muted" style="text-align:right">Rest day</td></tr>';
-    keys.forEach(k=>{if(wd[k]||rd[k])h+='<tr><td style="padding:5px 0;text-transform:capitalize">'+k+'</td><td style="text-align:right;font-weight:600">'+(wd[k]||'\u2013')+'</td><td style="text-align:right;color:var(--mut)">'+(rd[k]||'\u2013')+'</td></tr>';});
+    keys2.forEach(k=>{if(wd[k]||rd[k])h+='<tr><td style="padding:5px 0;text-transform:capitalize">'+k+'</td><td style="text-align:right;font-weight:600">'+(wd[k]||'\u2013')+'</td><td style="text-align:right;color:var(--mut)">'+(rd[k]||'\u2013')+'</td></tr>';});
     h+='</table></div>';}
   $("body").innerHTML=h;
 }
@@ -306,8 +330,8 @@ async function renderGoals(){
   h+='</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+(bc.latest_weight??'\u2013')+'</div><div class="k">Weight kg</div></div>';
   h+='<div class="col stat"><div class="v">'+(bc.bia_bf??'\u2013')+'%</div><div class="k">BIA body-fat</div></div></div>';
-  if(bc.weight_history&&bc.weight_history.length>1)h+=card('Weight trend','kg',lineChart(bc.weight_history.map(w=>({v:w.kg,date:w.date})),{color:'#34d399'})+dateAxis(bc.weight_history.map(w=>({date:w.date}))));
-  if(bc.bia_history&&bc.bia_history.length>1)h+=card('Body-fat trend (BIA scale)','% \u00B7 Withings',lineChart(bc.bia_history.map(x=>({v:x.bf,date:x.date})),{color:'#f59e0b',timeScale:true})+dateAxis(bc.bia_history),null,'<div class="legend">Scale estimate (daily-ish). DEXA above is the source of truth.</div>');
+  if(bc.weight_history&&bc.weight_history.length>1)h+=card('Weight trend','kg',lineChart(bc.weight_history.map(w=>({v:w.kg,date:w.date})),{color:'#34d399'})+dateAxis(bc.weight_history.map(w=>({date:w.date})),fmtMDName));
+  if(bc.bia_history&&bc.bia_history.length>1)h+=card('Body-fat trend (BIA scale)','% \u00B7 Withings',lineChart(bc.bia_history.map(x=>({v:x.bf,date:x.date})),{color:'#f59e0b',timeScale:true})+dateAxis(bc.bia_history,fmtMDName),null,'<div class="legend">Scale estimate (daily-ish). DEXA above is the source of truth.</div>');
   h+='<div class="st">Goals on the horizon</div>';
   const colors=['#6366f1','#06b6d4','#34d399','#f59e0b','#f97316','#ef4444'];
   (d.milestones||[]).forEach((m,i)=>{
