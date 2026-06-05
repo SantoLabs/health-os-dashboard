@@ -295,11 +295,11 @@ async function renderTraining(){
     d.insights.forEach(x=>{h+='<div style="font-size:13px;line-height:1.55;margin:5px 0;padding-left:15px;text-indent:-11px">• '+x+'</div>';});h+='</div>';}
   h+='<div class="st">Strength \u2014 last 30 days</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+st.sessions_30d+'</div><div class="k">Sessions 30d</div></div>';
-  h+='<div class="col stat"><div class="v" style="color:'+(st.sessions_7d>=st.target_per_week?'var(--grn)':'var(--amb)')+'">'+st.sessions_7d+'/'+st.target_per_week+'</div><div class="k">This week</div></div>';
+  h+='<div class="col stat"><div class="v" style="color:'+(st.sessions_7d>=st.target_per_week?'var(--grn)':'var(--amb)')+'">'+st.sessions_7d+'</div><div class="k">This week \u00B7 goal '+st.target_per_week+'</div></div>';
   h+='<div class="col stat"><div class="v">'+st.sets_30d+'</div><div class="k">Sets 30d</div></div></div>';
-  if(d.muscle_balance&&d.muscle_balance.length){const mb=d.muscle_balance;const mx=Math.max.apply(null,mb.map(m=>m.volume_kg))||1;
-    let bars='';mb.forEach(m=>{bars+='<div class="bar"><div class="bl" style="text-transform:capitalize">'+m.muscle.replace(/_/g,' ')+'</div><div class="bt"><div class="bf" style="width:'+(m.volume_kg/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+m.sets+' sets</div></div>';});
-    h+=card('Muscle volume','by muscle group, last 30d \u00B7 set-level',bars);}
+  if(d.muscle_balance&&d.muscle_balance.length){const mb=d.muscle_balance;const mx=Math.max.apply(null,mb.map(m=>m.sets))||1;
+    let bars='';mb.forEach(m=>{bars+='<div class="bar"><div class="bl" style="text-transform:capitalize">'+m.muscle.replace(/_/g,' ')+'</div><div class="bt"><div class="bf" style="width:'+(m.sets/mx*100)+'%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div></div><div class="bv">'+m.sets+' sets</div></div>';});
+    h+=card('Muscle balance','sets per muscle group, last 30d',bars);}
   if(st.recent&&st.recent.length){h+='<div class="st">Recent workouts</div>';st.recent.slice(0,5).forEach(w=>{h+='<div class="factor neu" style="border-left-color:#6366f1"><div class="mid"><div class="fl">'+(w.title||'Workout')+'</div><div class="fn">'+w.date+'</div></div><div><div class="fv">'+(w.sets||0)+' sets</div>'+(w.mins?'<div class="fd">'+w.mins+' min</div>':'')+'</div></div>';});}
   h+='<div class="st">Cardio \u2014 last 30 days</div>';
   h+='<div class="row"><div class="col stat"><div class="v">'+ca.sessions_30d+'</div><div class="k">Sessions</div></div>';
