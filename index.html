@@ -12,6 +12,7 @@
   .login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:360px;margin:0 auto;padding:24px}
   .login h1{font-size:26px;margin:0 0 2px;text-align:center}
   .login p.sub{color:var(--mut);text-align:center;margin:0 0 14px;font-size:14px}
+  input,select,textarea{font-family:inherit}
   input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:15px}
   button{cursor:pointer;border:none;border-radius:12px;font-size:15px;font-weight:700;padding:13px 16px}
   .btn-primary{background:var(--ind);color:#fff;width:100%}
@@ -76,15 +77,16 @@
   .mtable{width:100%;border-collapse:collapse;font-size:13px}
   .mtable td{padding:6px 0;border-bottom:1px solid var(--line)}
   .mtable tr:last-child td{border-bottom:none}
-  .ms{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line);margin:7px 0}
+  .ms{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line);margin:7px 0}
   .ms .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-  .ms .ml{flex:1;font-size:14px;font-weight:600}
+  .ms .ml{flex:1;font-size:14px;font-weight:600;min-width:0}
   .ms .mw{font-size:11px;color:var(--mut);white-space:nowrap}
   .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:50px;background:var(--card2);color:var(--txt);white-space:nowrap}
-  .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ind);color:#fff;font-size:13px;font-weight:600;padding:10px 18px;border-radius:50px;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none}
+  .gbtn{color:var(--mut);background:none;border:none;font-size:16px;cursor:pointer;padding:2px 5px}
+  .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ind);color:#fff;font-size:13px;font-weight:600;padding:10px 18px;border-radius:50px;opacity:0;transition:opacity .25s;z-index:80;pointer-events:none}
   .toast.show{opacity:.97}
   .nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,18,33,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:7px 4px 9px;z-index:50}
-  .nav button{background:none;border:none;color:var(--mut);font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 6px;flex:1}
+  .nav button{background:none;border:none;color:var(--mut);font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 8px;flex:1}
   .nav button .ic{font-size:19px}
   .nav button.on{color:var(--ind)}
   .legend{font-size:10px;color:var(--mut);margin-top:5px}
@@ -107,6 +109,32 @@
   .ins{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:11px 13px;margin:7px 0}
   .ins .it{font-size:13px;font-weight:700}
   .ins .ix{font-size:12px;color:var(--mut);margin-top:3px;line-height:1.5}
+  .mbar{margin:9px 0}
+  .mbar .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+  .mbar .top b{font-weight:800}
+  .mbar .tk{height:10px;background:#0e1428;border-radius:6px;overflow:hidden}
+  .mbar .tf{height:10px;border-radius:6px}
+  .ninput{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:14px;resize:vertical;min-height:48px}
+  .minput{width:100%;padding:9px 8px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:14px;text-align:center}
+  .macg{display:flex;gap:6px;margin:9px 0}
+  .macg .mc{flex:1}
+  .macg .mc label{font-size:10px;color:var(--mut);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;text-align:center}
+  .btn-sm{font-size:13px;padding:10px 12px;border-radius:10px}
+  .mealrow{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin:6px 0}
+  .mealrow .mt{flex:1;min-width:0}
+  .mealrow .md{font-size:13px;font-weight:700}
+  .mealrow .ms2{font-size:11px;color:var(--mut);margin-top:1px}
+  .confz{display:inline-block;font-size:9px;font-weight:800;padding:1px 6px;border-radius:50px;text-transform:uppercase;margin-right:4px}
+  .confz.high{background:rgba(22,163,74,.15);color:#86efac}.confz.medium{background:rgba(245,158,11,.15);color:#fcd34d}.confz.low{background:rgba(239,68,68,.15);color:#fca5a5}
+  .sheet{position:fixed;inset:0;background:rgba(5,8,17,.6);backdrop-filter:blur(3px);z-index:70;display:flex;align-items:flex-end}
+  .sheet .panel{background:var(--card);border-top-left-radius:20px;border-top-right-radius:20px;width:100%;max-width:540px;margin:0 auto;padding:10px 14px 22px;border:1px solid var(--line)}
+  .sheet .gh{width:40px;height:4px;background:var(--line);border-radius:3px;margin:6px auto 12px}
+  .sheet button.mi{display:flex;align-items:center;gap:12px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin:7px 0;color:var(--txt);font-size:15px;font-weight:600;text-align:left}
+  .sheet button.mi .ic{font-size:20px}
+  .ph{text-align:center;padding:30px 10px}
+  .ph .pe{font-size:38px}
+  .ph .pt{font-weight:700;margin-top:10px;font-size:17px}
+  .ph .pd{color:var(--mut);margin-top:8px;line-height:1.55;font-size:14px}
 </style></head>
 <body>
 <div id="login" class="login hidden">
@@ -126,29 +154,43 @@
     <div style="text-align:right"><div class="who" id="who"></div><div style="display:flex;gap:4px;justify-content:flex-end;margin-top:2px"><button class="btn-ghost" id="refreshBtn" onclick="refresh()">↻ Refresh</button><button class="btn-ghost" onclick="doLogout()">Sign out</button></div></div>
   </div>
   <div id="syncbar" style="height:3px;background:linear-gradient(90deg,#6366f1,#22d3ee);width:0;border-radius:2px;transition:width .5s ease;display:none;margin-bottom:6px"></div>
-  <div id="body"><div class="spin">Loading\u2026</div></div>
+  <div id="body"><div class="spin">Loading&#8230;</div></div>
 </div>
 <div id="toast" class="toast"></div>
+
+<div id="moreSheet" class="sheet hidden" onclick="if(event.target.id==='moreSheet')closeMore()">
+  <div class="panel">
+    <div class="gh"></div>
+    <button class="mi" onclick="go('nutrition')"><span class="ic">&#127869;&#65039;</span> Nutrition</button>
+    <button class="mi" onclick="go('goals')"><span class="ic">&#127937;</span> Goals &amp; Body</button>
+    <button class="mi" onclick="go('medical')"><span class="ic">&#129658;</span> Medical</button>
+    <button class="mi" onclick="go('schedule')"><span class="ic">&#128197;</span> Schedule</button>
+    <button class="mi" onclick="go('ask')"><span class="ic">&#128172;</span> Ask Health AI</button>
+  </div>
+</div>
 
 <div id="nav" class="nav hidden">
   <button data-v="today" class="on" onclick="go('today')"><span class="ic">&#9728;&#65039;</span>Today</button>
   <button data-v="trends" onclick="go('trends')"><span class="ic">&#128200;</span>Trends</button>
   <button data-v="sleep" onclick="go('sleep')"><span class="ic">&#128564;</span>Sleep</button>
   <button data-v="training" onclick="go('training')"><span class="ic">&#127947;&#65039;</span>Train</button>
-  <button data-v="goals" onclick="go('goals')"><span class="ic">&#127937;</span>Goals</button>
-  <button data-v="medical" onclick="go('medical')"><span class="ic">&#129658;</span>Medical</button>
+  <button data-v="more" onclick="openMore()"><span class="ic">&#9776;</span>More</button>
 </div>
 
 <script>
-const SB_URL="https://ntzlmclojiehhrzkgnsp.supabase.co", SB_ANON="sb_publishable_UqCw3ZPWqBK4nz6ELeuuhw_Dd9kthYY", API="https://ntzlmclojiehhrzkgnsp.supabase.co/functions/v1/health-dashboard";
+const SB_URL="https://ntzlmclojiehhrzkgnsp.supabase.co", SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50emxtY2xvamllaGhyemtnbnNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzE2NTYsImV4cCI6MjA5NTY0NzY1Nn0.EVoELUiK80AdYYtGcLP5u2nL6atia7Txq4xc4K334dM", API="https://ntzlmclojiehhrzkgnsp.supabase.co/functions/v1/health-dashboard", ACT="https://ntzlmclojiehhrzkgnsp.supabase.co/functions/v1/health-actions";
 const sb=window.supabase.createClient(SB_URL,SB_ANON);
 const $=(id)=>document.getElementById(id);
 let TOKEN=null, cache={}, trendDays=30, sleepDays=30, toastT=null;
+let GOALS=[], usedAI=false, lastConf=null, lastAssump=null;
 const SPORT_COL={Run:'#f59e0b',Swim:'#06b6d4',Ride:'#34d399',Other:'#8b96b0'};
+const MOREV=['nutrition','goals','medical','schedule','ask'];
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function showToast(msg){const t=$("toast");t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900);}
 function syncBar(frac){const b=$("syncbar");if(!b)return;b.style.display='block';b.style.width=Math.min(98,Math.round(frac*100))+'%';}
 function syncBarDone(){const b=$("syncbar");if(!b)return;b.style.width='100%';setTimeout(()=>{b.style.display='none';b.style.width='0';},600);}
+function openMore(){$("moreSheet").classList.remove("hidden");}
+function closeMore(){const s=$("moreSheet");if(s)s.classList.add("hidden");}
 
 async function boot(){
   const {data:{session}}=await sb.auth.getSession();
@@ -177,13 +219,22 @@ async function api(route){
   if(r.status===401){await sb.auth.signOut();location.reload();return null;}
   return await r.json();
 }
+async function actGet(route){
+  const r=await fetch(ACT+"?api="+route+"&apikey="+SB_ANON,{headers:{Authorization:"Bearer "+TOKEN}});
+  if(r.status===401){await sb.auth.signOut();location.reload();return null;}
+  return await r.json();
+}
+async function actPost(route,body){
+  const r=await fetch(ACT+"?api="+route+"&apikey="+SB_ANON,{method:'POST',headers:{Authorization:'Bearer '+TOKEN,'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  if(r.status===401){await sb.auth.signOut();location.reload();return null;}
+  return await r.json();
+}
 
 function relTime(iso){if(!iso)return '';const s=(Date.now()-new Date(iso).getTime())/1000;if(s<90)return 'just now';const m=Math.round(s/60);if(m<60)return m+'m ago';const h=Math.round(m/60);if(h<24)return h+'h ago';return Math.round(h/24)+'d ago';}
 function setLastSync(d){if(d&&d.last_synced){$("lastSync").textContent='Synced '+relTime(d.last_synced)+(d.data_through?' \u00B7 data through '+d.data_through:'');}}
 
-/* Refresh = real Garmin device re-pull (GitHub Actions), polled until last_synced advances. */
 async function refresh(){
-  const cur=document.querySelector('.nav button.on');const view=cur?cur.dataset.v:'today';
+  const cur=document.querySelector('.nav button.on');let view=cur?cur.dataset.v:'today';if(view==='more')view='today';
   const b=$("refreshBtn");
   let before=cache.today&&cache.today.last_synced;
   if(!before){try{before=(await api('today')).last_synced;}catch(e){}}
@@ -201,18 +252,22 @@ async function refresh(){
   showToast(done?'Device re-synced ✓':'Sync still running — showing latest');
 }
 
-const TITLES={today:"Today",trends:"Trends",sleep:"Sleep",training:"Training & Diet",goals:"Goals & Body",medical:"Medical"};
+const TITLES={today:"Today",trends:"Trends",sleep:"Sleep",training:"Training & Diet",nutrition:"Nutrition",goals:"Goals & Body",medical:"Medical",schedule:"Schedule",ask:"Ask Health AI"};
 async function go(v){
-  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
-  $("viewTitle").textContent=TITLES[v];window.scrollTo(0,0);
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v||(b.dataset.v==='more'&&MOREV.includes(v))));
+  closeMore();
+  $("viewTitle").textContent=TITLES[v]||'';window.scrollTo(0,0);
   $("body").innerHTML='<div class="spin">Loading\u2026</div>';
   try{
     if(v==='today')await renderTodayView();
     else if(v==='trends')await renderTrends();
     else if(v==='sleep')await renderSleep();
     else if(v==='training')await renderTraining();
+    else if(v==='nutrition')await renderNutrition();
     else if(v==='goals')await renderGoals();
     else if(v==='medical')await renderMedical();
+    else if(v==='schedule')renderSchedule();
+    else if(v==='ask')renderAsk();
   }catch(e){$("body").innerHTML='<div class="spin">Could not load. '+(e.message||'')+'</div>';}
 }
 
@@ -222,10 +277,14 @@ function impClass(i){return i==="positive"?"pos":i==="negative"?"neg":"neu";}
 /* ---------- TODAY ---------- */
 async function renderTodayView(){
   const d=await api('today');cache.today=d;setLastSync(d);
-  const sc=scoreColor(d.score);let h='';
+  const fs=d.checkin&&d.checkin.feeling_score;
+  let shown=d.score,adjNote='';
+  if(d.score!=null&&fs){const nud=({1:-6,2:-3,3:0,4:3,5:6})[fs]||0;shown=Math.max(0,Math.min(100,d.score+nud));if(nud!==0)adjNote='Adjusted '+(nud>0?'+':'')+nud+' for today\u2019s check-in (base '+d.score+')';}
+  const sc=scoreColor(shown);let h='';
   h+='<div class="hero"><div class="lbl">Readiness</div>';
-  h+='<div class="ring" style="color:'+sc+'">'+(d.score==null?"\u2013":d.score)+'</div>';
+  h+='<div class="ring" style="color:'+sc+'">'+(shown==null?"\u2013":shown)+'</div>';
   h+='<div class="lbl">'+(d.label||"")+'</div>';
+  if(adjNote)h+='<div class="muted" style="margin-top:4px">'+adjNote+'</div>';
   if(d.verdict)h+='<div class="verdict">'+d.verdict+'</div>';
   h+='</div>';
   h+='<div class="st">Why \u2014 what\u2019s moving your score</div>';
@@ -241,7 +300,7 @@ async function renderTodayView(){
   const faces=[[1,"\uD83D\uDE2B"],[2,"\uD83D\uDE15"],[3,"\uD83D\uDE10"],[4,"\uD83D\uDE42"],[5,"\uD83D\uDE04"]];
   const ex=d.checkin&&d.checkin.feeling_score;
   h+='<div class="checkin"><div style="font-weight:700">How are you feeling today?</div>';
-  h+='<div class="muted">'+(ex?("You logged "+ex+"/5 \u2014 tap to change"):"One tap. Optional \u2014 helps tune your score.")+'</div><div class="faces">';
+  h+='<div class="muted">'+(ex?("You logged "+ex+"/5 \u2014 tap to change"):"One tap. Optional \u2014 nudges your readiness score.")+'</div><div class="faces">';
   faces.forEach(f=>{h+='<button class="face'+(ex===f[0]?" sel":"")+'" data-v="'+f[0]+'" onclick="pickFeeling('+f[0]+')">'+f[1]+'</button>';});
   h+='</div><div class="muted" id="ciMsg" style="margin-top:8px"></div></div>';
   $("body").innerHTML=h;
@@ -250,7 +309,7 @@ async function pickFeeling(v){
   document.querySelectorAll(".face").forEach(el=>el.classList.toggle("sel",Number(el.dataset.v)===v));
   $("ciMsg").textContent="Saving\u2026";
   try{const r=await fetch(API+"?api=checkin&apikey="+SB_ANON,{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"},body:JSON.stringify({feeling_score:v})});
-    const j=await r.json();$("ciMsg").textContent=j.success?"Logged \u2713 \u2014 feeds your readiness signal.":"Could not save.";}catch(e){$("ciMsg").textContent="Could not save.";}
+    const j=await r.json();$("ciMsg").textContent=j.success?"Logged \u2713 \u2014 reopen Today to see your adjusted score.":"Could not save.";}catch(e){$("ciMsg").textContent="Could not save.";}
 }
 
 /* ---------- SVG line chart ---------- */
@@ -290,7 +349,7 @@ function dateAxis(arr,fmt){fmt=fmt||fmtMD;const ds=(arr||[]).filter(p=>p&&p.date
 function interp(txt){return txt?'<div class="interp">'+txt+'</div>':'';}
 function card(title,sub,inner,legend,extra){return '<div class="chartcard"><div class="h"><div class="t">'+title+'</div><div class="s">'+(sub||'')+'</div></div>'+inner+(legend?'<div class="legend">'+legend+'</div>':'')+(extra||'')+'</div>';}
 
-/* ---------- interactive chart wrappers (Batch 2): tap/drag to read values ---------- */
+/* ---------- interactive chart wrappers: tap/drag to read values ---------- */
 function iChart(points,opts){
   opts=opts||{};
   const svg=lineChart(points,opts);
@@ -415,9 +474,69 @@ async function renderTraining(){
   if(Object.keys(wd).length){h+='<div class="st">Nutrition targets</div><div class="card">';
     h+='<table style="width:100%;border-collapse:collapse;font-size:13px"><tr><td class="muted" style="padding:5px 0"></td><td class="muted" style="text-align:right">Workout day</td><td class="muted" style="text-align:right">Rest day</td></tr>';
     keys2.forEach(k=>{if(wd[k]||rd[k])h+='<tr><td style="padding:5px 0;text-transform:capitalize">'+k+'</td><td style="text-align:right;font-weight:600">'+(wd[k]||'\u2013')+'</td><td style="text-align:right;color:var(--mut)">'+(rd[k]||'\u2013')+'</td></tr>';});
-    h+='</table></div>';}
+    h+='</table><div class="muted" style="margin-top:8px">Log meals against these in the <b>Nutrition</b> tab.</div></div>';}
   $("body").innerHTML=h;
 }
+
+/* ---------- NUTRITION ---------- */
+function macroBar(label,total,tgt,unit,color){
+  const t=(tgt&&tgt.n)?tgt.n:null;const pct=t?Math.min(100,Math.round(total/t*100)):0;
+  const over=t&&total>t*1.05;
+  return '<div class="mbar"><div class="top"><span>'+label+'</span><span>'+(over?'<span style="color:#fca5a5">':'')+'<b>'+total+unit+'</b>'+(over?'</span>':'')+' / '+(tgt?tgt.raw:'\u2013')+'</span></div><div class="tk"><div class="tf" style="width:'+pct+'%;background:'+color+'"></div></div></div>';
+}
+async function renderNutrition(){
+  const d=await actGet('nutrition');if(!d){$("body").innerHTML='<div class="spin">Could not load.</div>';return;}
+  cache.nutrition=d;const tg=d.targets||{},to=d.totals||{};
+  let h='<div class="muted" style="margin:2px 0 10px">Today \u00B7 '+d.date+' \u00B7 targets shown for '+(tg.basis==='workout_day'?'a workout day':'a rest day')+'</div>';
+  h+=macroBar('Calories',to.calories||0,tg.calories,'','#6366f1');
+  h+=macroBar('Protein',to.protein||0,tg.protein,'g','#16a34a');
+  h+=macroBar('Carbs',to.carbs||0,tg.carbs,'g','#f59e0b');
+  h+=macroBar('Fat',to.fats||0,tg.fats,'g','#f97316');
+  h+=macroBar('Fiber',to.fiber||0,tg.fiber,'g','#06b6d4');
+  const wl=Math.round((to.water||0)/100)/10;
+  h+=macroBar('Water',wl,tg.water,'L','#22d3ee');
+  h+='<div class="card"><div style="font-weight:700;margin-bottom:8px">Log a meal</div>';
+  h+='<textarea id="mealDesc" class="ninput" placeholder="What did you eat? e.g. 2 rotis, dal, paneer curry, salad"></textarea>';
+  h+='<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-primary btn-sm" id="estBtn" onclick="nutEstimate()" style="flex:1">\u2728 Estimate with AI</button>';
+  h+='<select id="mealType" class="minput" style="flex:0 0 118px;text-align:left"><option value="">Meal\u2026</option><option>breakfast</option><option>lunch</option><option>dinner</option><option>snack</option></select></div>';
+  h+='<div class="muted" id="estMsg" style="margin-top:7px"></div>';
+  h+='<div id="estPanel" class="hidden"><div class="muted" id="estMeta" style="margin-top:8px;line-height:1.5"></div>';
+  h+='<div class="macg"><div class="mc"><label>Cal</label><input id="nc" class="minput" inputmode="numeric"></div><div class="mc"><label>Protein</label><input id="np" class="minput" inputmode="decimal"></div><div class="mc"><label>Carbs</label><input id="ncb" class="minput" inputmode="decimal"></div><div class="mc"><label>Fat</label><input id="nf" class="minput" inputmode="decimal"></div><div class="mc"><label>Fiber</label><input id="nfi" class="minput" inputmode="decimal"></div></div>';
+  h+='<button class="btn-primary btn-sm" onclick="nutSave()" style="width:100%">Save meal</button></div>';
+  h+='<button class="btn-ghost btn-sm" id="manualBtn" onclick="manualEntry()" style="margin-top:2px">or enter values manually</button>';
+  h+='</div>';
+  h+='<div class="st">Quick add water</div><div style="display:flex;gap:8px"><button class="btn-sm" style="flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="nutWater(250)">+250 ml</button><button class="btn-sm" style="flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt)" onclick="nutWater(500)">+500 ml</button></div>';
+  if(d.meals&&d.meals.length){h+='<div class="st">Logged today</div>';d.meals.forEach(m=>{
+    const isW=(m.water_ml!=null&&m.water_ml>0&&!m.calories);
+    const parts=[];if(m.calories!=null)parts.push(m.calories+' kcal');if(m.protein_g!=null)parts.push('P'+m.protein_g);if(m.carbs_g!=null)parts.push('C'+m.carbs_g);if(m.fat_g!=null)parts.push('F'+m.fat_g);
+    const sub=isW?(m.water_ml+' ml water'):parts.join(' \u00B7 ');
+    const conf=m.confidence?'<span class="confz '+m.confidence+'">'+m.confidence+'</span>':'';
+    const ttl=isW?'Water':(m.description||m.meal_type||'Entry');
+    h+='<div class="mealrow"><div class="mt"><div class="md">'+conf+ttl+'</div><div class="ms2">'+((m.meal_type&&!isW)?m.meal_type+' \u00B7 ':'')+sub+'</div></div><button class="gbtn" onclick="nutDel(\''+m.id+'\')">\u00D7</button></div>';
+  });}else{h+='<div class="muted" style="text-align:center;margin:16px 0">No meals logged yet today.</div>';}
+  $("body").innerHTML=h;
+}
+async function nutEstimate(){
+  const desc=$("mealDesc").value.trim();$("estMsg").textContent='';
+  if(!desc){$("estMsg").textContent='Type what you ate first.';return;}
+  const b=$("estBtn");b.textContent='Estimating\u2026';b.disabled=true;
+  let r=null;try{r=await actPost('nutrition_estimate',{description:desc});}catch(e){}
+  b.textContent='\u2728 Estimate with AI';b.disabled=false;
+  if(!r||!r.ok){$("estMsg").textContent=(r&&r.error)?('Could not estimate \u2014 '+r.error):'Could not estimate. Try manual entry.';return;}
+  const e=r.estimate;usedAI=true;lastConf=e.confidence||null;lastAssump=e.assumptions||null;
+  $("nc").value=e.calories!=null?e.calories:'';$("np").value=e.protein_g!=null?e.protein_g:'';$("ncb").value=e.carbs_g!=null?e.carbs_g:'';$("nf").value=e.fat_g!=null?e.fat_g:'';$("nfi").value=e.fiber_g!=null?e.fiber_g:'';
+  let meta='';if(e.confidence)meta+='<span class="confz '+e.confidence+'">'+e.confidence+' confidence</span> ';if(e.assumptions)meta+=e.assumptions;
+  if(e.items&&e.items.length)meta+='<div style="margin-top:5px">'+e.items.map(it=>it.name+(it.calories!=null?' ('+it.calories+')':'')).join(' \u00B7 ')+'</div>';
+  $("estMeta").innerHTML=meta;$("estPanel").classList.remove("hidden");
+}
+function manualEntry(){usedAI=false;lastConf=null;lastAssump=null;$("estMeta").innerHTML='Enter values manually, then Save.';$("estPanel").classList.remove("hidden");$("manualBtn").classList.add("hidden");}
+async function nutSave(){
+  const body={meal_type:$("mealType").value||null,description:$("mealDesc").value.trim()||null,calories:$("nc").value||null,protein_g:$("np").value||null,carbs_g:$("ncb").value||null,fat_g:$("nf").value||null,fiber_g:$("nfi").value||null,source:usedAI?'ai_estimate':'manual',confidence:lastConf,ai_note:lastAssump};
+  const r=await actPost('nutrition_log',body);
+  if(r&&r.ok){showToast('Logged \u2713');usedAI=false;lastConf=null;lastAssump=null;go('nutrition');}else{$("estMsg").textContent='Could not save.';}
+}
+async function nutWater(ml){const r=await actPost('nutrition_log',{meal_type:'water',water_ml:ml,source:'manual'});if(r&&r.ok){showToast('+'+ml+' ml \u2713');go('nutrition');}}
+async function nutDel(id){const r=await actPost('nutrition_delete',{id});if(r&&r.ok){go('nutrition');}}
 
 /* ---------- GOALS & BODY ---------- */
 async function renderGoals(){
@@ -433,15 +552,22 @@ async function renderGoals(){
   h+='<div class="col stat"><div class="v">'+(bc.bia_bf??'\u2013')+'%</div><div class="k">BIA body-fat</div></div></div>';
   if(bc.weight_history&&bc.weight_history.length>1)h+=card('Weight trend','kg',iChart(bc.weight_history.map(w=>({v:w.kg,date:w.date})),{color:'#34d399',unit:' kg'})+dateAxis(bc.weight_history.map(w=>({date:w.date})),fmtMDName));
   if(bc.bia_history&&bc.bia_history.length>1)h+=card('Body-fat trend (BIA scale)','% \u00B7 Withings',iChart(bc.bia_history.map(x=>({v:x.bf,date:x.date})),{color:'#f59e0b',timeScale:true,unit:'%'})+dateAxis(bc.bia_history,fmtMDName),null,'<div class="legend">Scale estimate (daily-ish). DEXA above is the source of truth.</div>');
+  let gl=null;try{gl=await actGet('goals_list');}catch(e){}
+  GOALS=(gl&&gl.goals)||[];
   h+='<div class="st">Goals on the horizon</div>';
   const colors=['#6366f1','#06b6d4','#34d399','#f59e0b','#f97316','#ef4444'];
-  (d.milestones||[]).forEach((m,i)=>{
-    if(m.days_away!=null&&m.days_away< -20)return;
+  GOALS.forEach((m,i)=>{
     const wk=m.days_away==null?'':(m.days_away<=0?'now':(m.days_away<60?m.days_away+'d':Math.round(m.days_away/30)+'mo'));
-    h+='<div class="ms"><div class="dot" style="background:'+colors[i%colors.length]+'"></div><div class="ml">'+m.label+'</div><div class="mw">'+m.when+'</div><div class="pill">'+wk+'</div></div>';
+    h+='<div class="ms"><div class="dot" style="background:'+colors[i%colors.length]+'"></div><div class="ml">'+m.label+'</div><div class="mw">'+(m.when_text||'')+'</div><div class="pill">'+wk+'</div><button class="gbtn" onclick="goalEdit(\''+m.id+'\')">\u270E</button><button class="gbtn" onclick="goalDel(\''+m.id+'\')">\u00D7</button></div>';
   });
+  h+='<button class="btn-ghost btn-sm" onclick="goalAdd()" style="margin-top:4px">+ Add goal</button>';
   $("body").innerHTML=h;
 }
+function parseWhen(s){if(!s)return null;const m=String(s).match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s\-]*((20)?\d{2})/i);if(!m)return null;const mi=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m[1].slice(0,3).toLowerCase());if(mi<0)return null;let y=parseInt(m[2]);if(y<100)y+=2000;const mm=String(mi+1).padStart(2,'0');return y+'-'+mm+'-15';}
+async function goalSave(b){const r=await actPost('goal_save',b);if(r&&r.goals){showToast('Saved \u2713');go('goals');}else{showToast('Could not save');}}
+async function goalDel(id){if(!confirm('Remove this goal?'))return;const r=await actPost('goal_delete',{id:id});if(r&&r.goals){go('goals');}}
+function goalEdit(id){const g=GOALS.find(x=>x.id===id);const label=prompt('Goal',g?g.label:'');if(label==null||!label.trim())return;const when=prompt('When? (e.g. Nov 2026)',g?(g.when_text||''):'')||'';goalSave({id:id,label:label.trim(),when_text:when,target_date:parseWhen(when)});}
+function goalAdd(){const label=prompt('New goal');if(label==null||!label.trim())return;const when=prompt('When? (e.g. Nov 2026)')||'';goalSave({label:label.trim(),when_text:when,target_date:parseWhen(when)});}
 
 /* ---------- MEDICAL ---------- */
 async function renderMedical(){
@@ -476,6 +602,14 @@ async function renderMedical(){
   });
   if(d.panel_size)h+='<div class="muted" style="text-align:center;margin:16px 4px 4px">Showing trended & flagged markers \u00B7 full panel has '+d.panel_size+' markers from your last report.</div>';
   $("body").innerHTML=h;
+}
+
+/* ---------- PLACEHOLDERS (V2) ---------- */
+function renderSchedule(){
+  $("body").innerHTML='<div class="card ph"><div class="pe">\uD83D\uDCC5</div><div class="pt">Schedule</div><div class="pd">Your weekly training plan \u2014 swim, runs, HIIT and gym \u2014 laid out across the week and synced with your readiness, is coming in the next version.</div></div>';
+}
+function renderAsk(){
+  $("body").innerHTML='<div class="card ph"><div class="pe">\uD83D\uDCAC</div><div class="pt">Ask Health AI</div><div class="pd">A conversational coach that knows your Garmin, labs, sleep and training history \u2014 ask anything and get answers grounded in your own data. Arriving in the next version.</div></div>';
 }
 
 document.addEventListener('pointermove',chartEvt,{passive:true});
