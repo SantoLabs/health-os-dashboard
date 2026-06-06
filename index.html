@@ -84,7 +84,7 @@
   .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ind);color:#fff;font-size:13px;font-weight:600;padding:10px 18px;border-radius:50px;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none}
   .toast.show{opacity:.97}
   .nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,18,33,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:7px 4px 9px;z-index:50}
-  .nav button{background:none;border:none;color:var(--mut);font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 8px;flex:1}
+  .nav button{background:none;border:none;color:var(--mut);font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 6px;flex:1}
   .nav button .ic{font-size:19px}
   .nav button.on{color:var(--ind)}
   .legend{font-size:10px;color:var(--mut);margin-top:5px}
@@ -99,6 +99,14 @@
   .exrow .em{color:var(--mut);text-transform:capitalize;font-size:11px}
   .chev{color:var(--mut);font-weight:600;display:inline-block;transition:transform .15s}
   .chev.open{transform:rotate(90deg)}
+  .hyp{display:block;width:100%;height:88px}
+  .nap{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin:6px 0}
+  .nap .nd{font-size:13px;font-weight:700}
+  .nap .nn{font-size:11px;color:var(--mut);margin-top:1px;text-transform:capitalize}
+  .nap .nmv{font-size:15px;font-weight:800;white-space:nowrap}
+  .ins{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;padding:11px 13px;margin:7px 0}
+  .ins .it{font-size:13px;font-weight:700}
+  .ins .ix{font-size:12px;color:var(--mut);margin-top:3px;line-height:1.5}
 </style></head>
 <body>
 <div id="login" class="login hidden">
@@ -125,6 +133,7 @@
 <div id="nav" class="nav hidden">
   <button data-v="today" class="on" onclick="go('today')"><span class="ic">&#9728;&#65039;</span>Today</button>
   <button data-v="trends" onclick="go('trends')"><span class="ic">&#128200;</span>Trends</button>
+  <button data-v="sleep" onclick="go('sleep')"><span class="ic">&#128564;</span>Sleep</button>
   <button data-v="training" onclick="go('training')"><span class="ic">&#127947;&#65039;</span>Train</button>
   <button data-v="goals" onclick="go('goals')"><span class="ic">&#127937;</span>Goals</button>
   <button data-v="medical" onclick="go('medical')"><span class="ic">&#129658;</span>Medical</button>
@@ -134,7 +143,7 @@
 const SB_URL="https://ntzlmclojiehhrzkgnsp.supabase.co", SB_ANON="sb_publishable_UqCw3ZPWqBK4nz6ELeuuhw_Dd9kthYY", API="https://ntzlmclojiehhrzkgnsp.supabase.co/functions/v1/health-dashboard";
 const sb=window.supabase.createClient(SB_URL,SB_ANON);
 const $=(id)=>document.getElementById(id);
-let TOKEN=null, cache={}, trendDays=30, toastT=null;
+let TOKEN=null, cache={}, trendDays=30, sleepDays=30, toastT=null;
 const SPORT_COL={Run:'#f59e0b',Swim:'#06b6d4',Ride:'#34d399',Other:'#8b96b0'};
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function showToast(msg){const t=$("toast");t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1900);}
@@ -192,7 +201,7 @@ async function refresh(){
   showToast(done?'Device re-synced ✓':'Sync still running — showing latest');
 }
 
-const TITLES={today:"Today",trends:"Trends",training:"Training & Diet",goals:"Goals & Body",medical:"Medical"};
+const TITLES={today:"Today",trends:"Trends",sleep:"Sleep",training:"Training & Diet",goals:"Goals & Body",medical:"Medical"};
 async function go(v){
   document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   $("viewTitle").textContent=TITLES[v];window.scrollTo(0,0);
@@ -200,6 +209,7 @@ async function go(v){
   try{
     if(v==='today')await renderTodayView();
     else if(v==='trends')await renderTrends();
+    else if(v==='sleep')await renderSleep();
     else if(v==='training')await renderTraining();
     else if(v==='goals')await renderGoals();
     else if(v==='medical')await renderMedical();
@@ -227,6 +237,7 @@ async function renderTodayView(){
   if(d.training){h+='<div class="st">Today\u2019s plan</div>';
     h+='<div class="reco"><b>Train:</b> '+d.training+'</div>';
     if(d.nutrition)h+='<div class="reco"><b>Fuel:</b> '+d.nutrition+'</div>';}
+  if(d.sleep_nudge)h+='<div class="reco" style="border-left:3px solid var(--cyan)"><b style="color:var(--cyan)">Sleep:</b> '+d.sleep_nudge+'</div>';
   const faces=[[1,"\uD83D\uDE2B"],[2,"\uD83D\uDE15"],[3,"\uD83D\uDE10"],[4,"\uD83D\uDE42"],[5,"\uD83D\uDE04"]];
   const ex=d.checkin&&d.checkin.feeling_score;
   h+='<div class="checkin"><div style="font-weight:700">How are you feeling today?</div>';
@@ -331,6 +342,47 @@ async function renderTrends(){
   $("body").innerHTML=h;
 }
 function setTrendDays(dd){trendDays=dd;go('trends');}
+
+/* ---------- SLEEP ---------- */
+function istClock(iso){const d=new Date(new Date(iso).getTime()+5.5*3600000);let H=d.getUTCHours(),m=d.getUTCMinutes();const ap=H<12?'a':'p';let h=H%12;if(h===0)h=12;return h+':'+String(m).padStart(2,'0')+ap;}
+function hypnoChart(segs,win){
+  if(!segs||!segs.length||!win)return '<div class="muted">No stage breakdown for last night.</div>';
+  const W=480,H=88,P=2,rowH=(H-2*P)/4;
+  const t0=+new Date(win.start),t1=+new Date(win.end),span=(t1-t0)||1;
+  const rows={awake:0,rem:1,light:2,deep:3};
+  const col={awake:'#f59e0b',rem:'#6366f1',light:'#a5b4fc',deep:'#1e3a8a'};
+  let r='';
+  segs.forEach(s=>{const ri=rows[s.stage];if(ri==null)return;const x=P+((+new Date(s.start)-t0)/span)*(W-2*P);const w=Math.max(0.6,((+new Date(s.end)-+new Date(s.start))/span)*(W-2*P));const y=P+ri*rowH;r+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(rowH-1.5).toFixed(1)+'" rx="1.5" fill="'+col[s.stage]+'"/>';});
+  return '<svg class="hyp" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+r+'</svg>';
+}
+async function renderSleep(){
+  const d=await api('sleep&days='+sleepDays);cache.sleep=d;
+  if(!d||!d.latest){$("body").innerHTML='<div class="spin">No sleep data yet.</div>';return;}
+  const a=d.averages||{},lt=d.latest;
+  let h='<div class="seg">';[30,60,90].forEach(dd=>{h+='<button class="'+(sleepDays===dd?'on':'')+'" onclick="setSleepDays('+dd+')">'+dd+'d</button>';});h+='</div>';
+  const win=lt.hyp_window;
+  const sub=win?(istClock(win.start)+' \u2013 '+istClock(win.end)):'';
+  let hg=hypnoChart(lt.hypnogram,win);
+  hg+='<div class="axis">'+(win?'<span>'+istClock(win.start)+'</span><span></span><span>'+istClock(win.end)+'</span>':'')+'</div>';
+  const ttl='Last night \u00B7 '+(lt.total!=null?(Math.round(lt.total/6)/10)+'h':'\u2013')+(lt.score!=null?' \u00B7 score '+lt.score:'');
+  h+=card(ttl,sub,hg,'<span style="color:#f59e0b">\u25A0</span> Awake <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light <span style="color:#1e3a8a">\u25A0</span> Deep');
+  h+='<div class="row"><div class="col stat"><div class="v">'+(a.total_h??'\u2013')+'h</div><div class="k">Avg sleep</div></div>';
+  h+='<div class="col stat"><div class="v" style="color:'+scoreColor(a.score)+'">'+(a.score??'\u2013')+'</div><div class="k">Avg score</div></div>';
+  h+='<div class="col stat"><div class="v">'+(a.deep_pct??'\u2013')+'%</div><div class="k">Deep</div></div>';
+  h+='<div class="col stat"><div class="v">'+(a.rem_pct??'\u2013')+'%</div><div class="k">REM</div></div></div>';
+  if(a.bedtime)h+='<div class="reco">Typical bedtime <b>'+a.bedtime+'</b>'+(a.bedtime_var_min!=null?' \u00B7 swing \u00B1'+a.bedtime_var_min+' min':'')+(a.waketime?' \u00B7 wake '+a.waketime:'')+'.</div>';
+  if(d.insights&&d.insights.length){h+='<div class="st">What it means</div>';d.insights.forEach(x=>{const cl=x.tone==='positive'?'pos':x.tone==='negative'?'neg':'neu';h+='<div class="ins '+cl+'"><div class="it">'+x.title+'</div><div class="ix">'+x.detail+'</div></div>';});}
+  h+='<div class="st">Trends \u00B7 tap a chart</div>';
+  const se=d.series||{};
+  if(se.hours)h+=card('Hours slept','per night',iChart(se.hours,{color:'#6366f1',unit:'h',min:0})+dateAxis(se.hours,fmtMDName));
+  if(se.stages)h+=card('Stage mix','hrs/night \u00B7 tap a bar',iSleep(se.stages)+dateAxis(se.stages,fmtMDName),'<span style="color:#1e3a8a">\u25A0</span> Deep <span style="color:#6366f1">\u25A0</span> REM <span style="color:#a5b4fc">\u25A0</span> Light');
+  if(se.debt)h+=card('Sleep debt','3-day rolling, min',iChart(se.debt,{color:'#f59e0b',unit:' min',min:0})+dateAxis(se.debt,fmtMDName));
+  const np=d.naps||{};
+  if(np.coach&&np.coach.length){h+='<div class="st">Nap coach</div>';np.coach.forEach(c=>{h+='<div style="font-size:13px;line-height:1.55;margin:5px 0;padding-left:15px;text-indent:-11px">\u2022 '+c+'</div>';});}
+  if(np.recent&&np.recent.length){h+='<div class="st">Recent naps</div>';np.recent.slice(0,6).forEach(n=>{h+='<div class="nap"><div style="flex:1"><div class="nd">'+n.date+(n.start?' \u00B7 '+n.start:'')+'</div><div class="nn">'+(n.note||'')+'</div></div><div class="nmv">'+(n.mins!=null?n.mins+'m':'')+'</div></div>';});}
+  $("body").innerHTML=h;
+}
+function setSleepDays(dd){sleepDays=dd;go('sleep');}
 
 /* ---------- TRAINING & DIET ---------- */
 async function renderTraining(){
