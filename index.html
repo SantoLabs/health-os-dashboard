@@ -276,7 +276,7 @@ function impClass(i){return i==="positive"?"pos":i==="negative"?"neg":"neu";}
 
 /* ---------- TODAY ---------- */
 async function renderTodayView(){
-  const d=await api('today');cache.today=d;setLastSync(d);
+  const d=await api('today');cache.today=d;setLastSync(d);let bg=null;try{bg=await actGet('bedtime_goal');}catch(e){}
   const fs=d.checkin&&d.checkin.feeling_score;
   let shown=d.score,adjNote='';
   if(d.score!=null&&fs){const nud=({1:-6,2:-3,3:0,4:3,5:6})[fs]||0;shown=Math.max(0,Math.min(100,d.score+nud));if(nud!==0)adjNote='Adjusted '+(nud>0?'+':'')+nud+' for today\u2019s check-in (base '+d.score+')';}
@@ -287,7 +287,7 @@ async function renderTodayView(){
   if(adjNote)h+='<div class="muted" style="margin-top:4px">'+adjNote+'</div>';
   if(d.verdict)h+='<div class="verdict">'+d.verdict+'</div>';
   h+='</div>';
-  h+='<div class="st">Why \u2014 what\u2019s moving your score</div>';
+  h+=bedtimeTodayLine(bg);h+='<div class="st">Why \u2014 what\u2019s moving your score</div>';
   (d.factors||[]).forEach(f=>{
     h+='<div class="factor '+impClass(f.impact)+'"><div class="emo">'+f.emoji+'</div>';
     h+='<div class="mid"><div class="fl">'+f.label+'</div><div class="fn">'+(f.note||"")+'</div></div>';
@@ -611,6 +611,16 @@ function bhLabel(bh){
   if(m===60){H=(H+1)%24;m=0;}
   const ap=H<12?'am':'pm';let hh=H%12;if(hh===0)hh=12;
   return hh+':'+String(m).padStart(2,'0')+ap;
+}
+function bedtimeTodayLine(bg){
+  if(!bg||!bg.summary||!bg.nights||!bg.nights.length)return '';
+  const n=bg.nights[bg.nights.length-1];
+  if(!n||n.status==='no_data')return '';
+  const tl=bhLabel(bg.target_hour),streak=bg.summary.current_streak||0;
+  const ok=(n.status==='on_target'||n.mins_vs_target<=15);
+  const col=ok?'var(--grn)':'var(--amb)';
+  const msg=ok?('asleep '+bhLabel(n.bedtime_hour)+' \u2014 on target \u2713'+(streak>0?(' \u00B7 \uD83D\uDD25 '+streak+'-night streak'):'')):('asleep '+bhLabel(n.bedtime_hour)+' \u2014 '+n.mins_vs_target+' min past '+tl+'. Wind down by '+bhLabel(bg.winddown_hour)+' tonight.');
+  return '<div class="reco" style="border-left:3px solid '+col+'"><b style="color:'+col+'">Bedtime:</b> '+msg+'</div>';
 }
 function bedtimeCard(bg){
   if(!bg||!bg.summary)return '';
