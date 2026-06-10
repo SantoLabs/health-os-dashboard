@@ -417,7 +417,7 @@ function hypnoChart(segs,win){
 async function renderSleep(){
   const d=await api('sleep&days='+sleepDays);cache.sleep=d;
   if(!d||!d.latest){$("body").innerHTML='<div class="spin">No sleep data yet.</div>';return;}
-  const a=d.averages||{},lt=d.latest;
+  const a=d.averages||{},lt=d.latest;let bg=null;try{bg=await actGet('bedtime_goal');}catch(e){}
   let h='<div class="seg">';[30,60,90].forEach(dd=>{h+='<button class="'+(sleepDays===dd?'on':'')+'" onclick="setSleepDays('+dd+')">'+dd+'d</button>';});h+='</div>';
   const win=lt.hyp_window;
   const sub=win?(istClock(win.start)+' \u2013 '+istClock(win.end)):'';
@@ -430,7 +430,7 @@ async function renderSleep(){
   h+='<div class="col stat"><div class="v">'+(a.deep_pct??'\u2013')+'%</div><div class="k">Deep</div></div>';
   h+='<div class="col stat"><div class="v">'+(a.rem_pct??'\u2013')+'%</div><div class="k">REM</div></div></div>';
   if(a.bedtime)h+='<div class="reco">Typical bedtime <b>'+a.bedtime+'</b>'+(a.bedtime_var_min!=null?' \u00B7 swing \u00B1'+a.bedtime_var_min+' min':'')+(a.waketime?' \u00B7 wake '+a.waketime:'')+'.</div>';
-  if(d.insights&&d.insights.length){h+='<div class="st">What it means</div>';d.insights.forEach(x=>{const cl=x.tone==='positive'?'pos':x.tone==='negative'?'neg':'neu';h+='<div class="ins '+cl+'"><div class="it">'+x.title+'</div><div class="ix">'+x.detail+'</div></div>';});}
+  h+=bedtimeCard(bg);if(d.insights&&d.insights.length){h+='<div class="st">What it means</div>';d.insights.forEach(x=>{const cl=x.tone==='positive'?'pos':x.tone==='negative'?'neg':'neu';h+='<div class="ins '+cl+'"><div class="it">'+x.title+'</div><div class="ix">'+x.detail+'</div></div>';});}
   h+='<div class="st">Trends \u00B7 tap a chart</div>';
   const se=d.series||{};
   if(se.hours)h+=card('Hours slept','per night',iChart(se.hours,{color:'#6366f1',unit:'h',min:0})+dateAxis(se.hours,fmtMDName));
@@ -602,6 +602,44 @@ async function renderMedical(){
   });
   if(d.panel_size)h+='<div class="muted" style="text-align:center;margin:16px 4px 4px">Showing trended & flagged markers \u00B7 full panel has '+d.panel_size+' markers from your last report.</div>';
   $("body").innerHTML=h;
+}
+
+/* ---------- BEDTIME GOAL CARD ---------- */
+function bhLabel(bh){
+  if(bh==null)return '\u2013';
+  let H=Math.floor(bh)%24,m=Math.round((bh-Math.floor(bh))*60);
+  if(m===60){H=(H+1)%24;m=0;}
+  const ap=H<12?'am':'pm';let hh=H%12;if(hh===0)hh=12;
+  return hh+':'+String(m).padStart(2,'0')+ap;
+}
+function bedtimeCard(bg){
+  if(!bg||!bg.summary)return '';
+  const s=bg.summary,nights=bg.nights||[];
+  const tl=bhLabel(bg.target_hour),wl=bhLabel(bg.winddown_hour);
+  const colOf={on_target:'#16a34a',close:'#f59e0b',missed:'#ef4444',no_data:'#262f47'};
+  let cells='';
+  nights.forEach(n=>{
+    const c=colOf[n.status]||'#262f47';
+    const tip=n.date+': '+bhLabel(n.bedtime_hour)+(n.status==='no_data'?' (no data)':(n.mins_vs_target>0?' (+'+n.mins_vs_target+'m late)':' (on time)'));
+    cells+='<div title="'+tip+'" style="width:13px;height:13px;border-radius:3px;background:'+c+'"></div>';
+  });
+  const streak=s.current_streak||0;
+  const last=nights.length?nights[nights.length-1]:null;
+  let lastLine='';
+  if(last){
+    if(last.status==='no_data')lastLine='Last night: no sleep data.';
+    else lastLine='Last night: asleep '+bhLabel(last.bedtime_hour)+' \u2014 '+(last.mins_vs_target<=15?('on target \u2713'):('+'+last.mins_vs_target+' min past '+tl));
+  }
+  let h='<div class="card">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div style="font-weight:700">Bedtime goal</div><div class="muted" style="text-align:right">asleep by '+tl+' \u00B7 wind-down '+wl+'</div></div>';
+  h+='<div style="display:flex;gap:18px;margin:12px 0 4px"><div><div style="font-size:26px;font-weight:800">'+(streak>0?'\uD83D\uDD25 ':'')+streak+'</div><div class="muted">night streak</div></div>';
+  h+='<div><div style="font-size:26px;font-weight:800">'+(s.rate_7d==null?'\u2013':s.rate_7d+'%')+'</div><div class="muted">this week</div></div>';
+  h+='<div><div style="font-size:26px;font-weight:800">'+(s.rate_30d==null?'\u2013':s.rate_30d+'%')+'</div><div class="muted">last 30d</div></div></div>';
+  if(cells)h+='<div style="display:flex;flex-wrap:wrap;gap:3px;margin:10px 0 6px">'+cells+'</div>';
+  h+='<div class="legend"><span style="color:#16a34a">\u25A0</span> on target <span style="color:#f59e0b">\u25A0</span> close <span style="color:#ef4444">\u25A0</span> missed <span style="color:#262f47">\u25A0</span> no data</div>';
+  if(lastLine)h+='<div class="reco" style="margin-top:10px">'+lastLine+((s.avg_mins_late_30d!=null&&s.avg_mins_late_30d>0)?(' \u00B7 averaging '+s.avg_mins_late_30d+' min late over 30 days.'):'')+'</div>';
+  h+='</div>';
+  return h;
 }
 
 /* ---------- PLACEHOLDERS (V2) ---------- */
